@@ -23,7 +23,7 @@ import {
   MessageSquare,
   Pin,
   Search,
-  Sparkles,
+  FolderKanban,
 } from "lucide-react";
 import type * as React from "react";
 import { AppHeader } from "@/components/header";
@@ -36,7 +36,7 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
           {/* Brand */}
           <div className="flex items-center gap-2 px-2">
             <div className="flex size-6 items-center justify-center rounded-md bg-primary/15 text-primary">
-              <Sparkles className="size-4" />
+              <FolderKanban className="size-4" />
             </div>
             <span className="text-sm font-semibold">ProjectMap</span>
           </div>

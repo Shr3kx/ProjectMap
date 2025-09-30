@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Send, Sparkles, Map, Users, Zap } from "lucide-react";
+import { Send, FolderKanban, Map, Users, Zap } from "lucide-react";
 
 export default function ChatPage() {
   const [message, setMessage] = useState("");
@@ -55,7 +55,7 @@ export default function ChatPage() {
 
   const quickStarters = [
     {
-      icon: <Sparkles className="w-4 h-4" />,
+      icon: <FolderKanban className="w-4 h-4" />,
       text: "Build a SaaS MVP",
       category: "Startup",
     },
@@ -77,13 +77,13 @@ export default function ChatPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background ">
       <div className="container mx-auto px-4 py-2 max-w-4xl">
         {/* Welcome Section */}
         {messages.length === 1 && (
           <div className="text-center mb-8">
             <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium mb-4">
-              <Sparkles className="w-4 h-4" />
+              <FolderKanban className="w-4 h-4" />
               Ready to map your project?
             </div>
             <h2 className="text-3xl font-bold text-foreground mb-4">
