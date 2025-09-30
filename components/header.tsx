@@ -21,7 +21,9 @@ export function AppHeader() {
         </div>
 
         {/* Right: Theme switcher */}
-        <div className="flex items-center gap-2">{/* <ThemeSwitcher /> */}</div>
+        <div className="flex items-center gap-2">
+          <ThemeSwitcher />
+        </div>
       </div>
     </header>
   );

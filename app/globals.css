@@ -136,4 +136,130 @@
   .scrollbar-none::-webkit-scrollbar {
     display: none;
   }
+
+  .glass-effect {
+    @apply backdrop-blur-xl bg-white/5 border border-white/10 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)];
+    background: linear-gradient(
+      to bottom,
+      color-mix(in hsl, var(--background) 95%, transparent),
+      color-mix(in hsl, var(--background) 50%, transparent)
+    );
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  }
+
+  .neo-blur {
+    @apply backdrop-blur-2xl bg-black/40 border border-white/10;
+  }
+
+  .text-gradient {
+    @apply bg-gradient-to-br from-white via-white/90 to-white/70 bg-clip-text text-transparent;
+  }
+
+  .text-gradient-primary {
+    @apply bg-gradient-to-br from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent;
+  }
+
+  /* Floating blobs */
+  .blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(40px);
+    opacity: 0.4;
+    animation: float 20s infinite ease-in-out;
+  }
+
+  .blob-1 {
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(
+      circle,
+      hsl(var(--primary) / 0.3),
+      transparent 70%
+    );
+    top: 10%;
+    left: 15%;
+    animation-delay: 0s;
+  }
+
+  .blob-2 {
+    width: 250px;
+    height: 250px;
+    background: radial-gradient(
+      circle,
+      hsl(var(--accent) / 0.3),
+      transparent 70%
+    );
+    bottom: 15%;
+    right: 20%;
+    animation-delay: -5s;
+  }
+
+  .blob-3 {
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(
+      circle,
+      hsl(var(--primary) / 0.2),
+      transparent 70%
+    );
+    top: 50%;
+    right: 30%;
+    animation-delay: -10s;
+  }
+
+  @keyframes float {
+    0%,
+    100% {
+      transform: translate(0, 0);
+    }
+    25% {
+      transform: translate(5%, 5%);
+    }
+    50% {
+      transform: translate(-5%, 10%);
+    }
+    75% {
+      transform: translate(-10%, -5%);
+    }
+  }
+}
+
+/* Custom effects */
+.skeuomorphic-button {
+  background: linear-gradient(
+    to bottom,
+    color-mix(in hsl, var(--primary) 95%, transparent),
+    color-mix(in hsl, var(--primary) 70%, transparent)
+  );
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2), 0 2px 6px rgba(0, 0, 0, 0.1),
+    inset 0 1px rgba(255, 255, 255, 0.15);
+  border: 1px solid color-mix(in hsl, var(--primary) 50%, transparent);
+  transform: translateY(0);
+  transition: all 0.2s ease;
+  color: var(--primary-foreground);
+  font-weight: 600;
+}
+
+.skeuomorphic-button:hover {
+  background: linear-gradient(
+    to bottom,
+    color-mix(in hsl, var(--primary) 100%, transparent),
+    color-mix(in hsl, var(--primary) 80%, transparent)
+  );
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 4px 8px rgba(0, 0, 0, 0.1),
+    inset 0 1px rgba(255, 255, 255, 0.15);
+}
+
+.skeuomorphic-button:active {
+  background: linear-gradient(
+    to bottom,
+    color-mix(in hsl, var(--primary) 80%, transparent),
+    color-mix(in hsl, var(--primary) 90%, transparent)
+  );
+  transform: translateY(1px);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.15), inset 0 1px 1px rgba(0, 0, 0, 0.1);
 }

@@ -43,7 +43,7 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
 
           {/* New Chat */}
           <div className="p-2">
-            <Button className="w-full" size="sm">
+            <Button className="w-full skeuomorphic-button" size="sm">
               <MessageSquare className="mr-2 size-4" />
               New Chat
             </Button>
