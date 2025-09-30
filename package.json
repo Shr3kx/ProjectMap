@@ -1,5 +1,5 @@
 {
-  "name": "ProjectMaper",
+  "name": "ProjectMap",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -39,10 +39,10 @@
     "@radix-ui/react-tooltip": "1.1.6",
     "@vercel/analytics": "1.3.1",
     "autoprefixer": "^10.4.20",
-    "better-auth": "^1.3.23",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "1.0.4",
+    "convex": "^1.27.3",
     "date-fns": "4.1.0",
     "embla-carousel-react": "8.5.1",
     "geist": "^1.3.1",
