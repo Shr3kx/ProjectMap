@@ -75,7 +75,7 @@ export function ThemeSwitcher() {
   }
 
   return (
-    <div className="rounded-xl p-2 bg-background">
+    <div className="rounded-xl p-2 bg-transparent">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button

@@ -1,9 +1,10 @@
 "use client";
-
 import ThemeSwitcher from "@/components/theme-switcher";
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { SignInButton, useUser, UserButton } from "@clerk/nextjs";
+import { Github } from "lucide-react";
 import { Button } from "./ui/button";
+import Link from "next/link";
 export function AppHeader() {
   const { state } = useSidebar();
   const isSidebarCollapsed = state === "collapsed";
@@ -36,6 +37,16 @@ export function AppHeader() {
           )}
 
           <ThemeSwitcher />
+          <Link href="https://github.com/Shr3kx" target="_blank">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8"
+              aria-label="Keyboard shortcuts"
+            >
+              <Github className="size-4" />
+            </Button>
+          </Link>
         </div>
       </div>
     </header>

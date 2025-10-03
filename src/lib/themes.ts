@@ -22,7 +22,8 @@ export type ThemeTokenName =
   | "ring"
   | "sidebar"
   | "sidebar-foreground"
-  | "sidebar-border";
+  | "sidebar-border"
+  | "btn-border"; // Added btn-border token
 
 export interface ThemePreset {
   name: string;
@@ -57,6 +58,7 @@ export const themePresets: Record<string, ThemePreset> = {
       sidebar: "0 0% 98%",
       "sidebar-foreground": "240 10% 3.9%",
       "sidebar-border": "240 5.9% 90%",
+      "btn-border": "0 0% 0%", // Black border for light theme
     },
   },
   "light-green": {
@@ -85,6 +87,36 @@ export const themePresets: Record<string, ThemePreset> = {
       sidebar: "0 0% 98%",
       "sidebar-foreground": "240 10% 3.9%",
       "sidebar-border": "240 5.9% 90%",
+      "btn-border": "0 0% 0%", // Black border for light theme
+    },
+  },
+  "light-amethyst": {
+    name: "Amethyst Light",
+    theme: "light",
+    colors: {
+      background: "0 0% 100%", // White base
+      foreground: "240 10% 3.9%", // Dark text
+      card: "0 0% 100%",
+      "card-foreground": "240 10% 3.9%",
+      popover: "0 0% 100%",
+      "popover-foreground": "240 10% 3.9%",
+      primary: "234 89% 74%", // Same amethyst purple
+      "primary-foreground": "0 0% 100%", // White text on purple
+      secondary: "240 4.8% 95.9%", // Subtle gray
+      "secondary-foreground": "240 5.9% 10%",
+      muted: "240 4.8% 95.9%",
+      "muted-foreground": "240 3.8% 46.1%",
+      accent: "234 70% 92%", // Light purple accent
+      "accent-foreground": "234 89% 30%", // Deep purple text
+      destructive: "0 84.2% 60.2%",
+      "destructive-foreground": "0 0% 98%",
+      border: "240 5.9% 90%",
+      input: "240 5.9% 90%",
+      ring: "234 89% 74%", // Purple ring
+      sidebar: "0 0% 98%",
+      "sidebar-foreground": "240 10% 3.9%",
+      "sidebar-border": "240 5.9% 90%",
+      "btn-border": "0 0% 0%", // Black border for light theme
     },
   },
   "dark-pink": {
@@ -113,6 +145,7 @@ export const themePresets: Record<string, ThemePreset> = {
       sidebar: "240 10% 7%",
       "sidebar-foreground": "0 0% 98%",
       "sidebar-border": "240 3.7% 15.9%",
+      "btn-border": "0 0% 98%", // White border for dark theme
     },
   },
   "dark-green": {
@@ -141,6 +174,7 @@ export const themePresets: Record<string, ThemePreset> = {
       sidebar: "240 10% 7%",
       "sidebar-foreground": "0 0% 98%",
       "sidebar-border": "240 3.7% 15.9%",
+      "btn-border": "0 0% 98%", // White border for dark theme
     },
   },
   "dark-amethyst": {
@@ -169,6 +203,7 @@ export const themePresets: Record<string, ThemePreset> = {
       sidebar: "240 10% 7%",
       "sidebar-foreground": "0 0% 98%",
       "sidebar-border": "240 3.7% 15.9%",
+      "btn-border": "0 0% 14%", // White border for dark theme
     },
   },
 };

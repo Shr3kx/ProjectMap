@@ -2,11 +2,11 @@
 
 import type React from "react";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Send, FolderKanban, Map, Users, Zap } from "lucide-react";
+import { Send, FolderKanban, Map, Users, Zap, Paperclip } from "lucide-react";
 
 export default function ChatPage() {
   const [message, setMessage] = useState("");
@@ -19,6 +19,10 @@ export default function ChatPage() {
       timestamp: "Just now",
     },
   ]);
+  const [shortcutsModalOpen, setShortcutsModalOpen] = useState(false);
+
+  const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSendMessage = () => {
     if (!message.trim()) return;
@@ -51,6 +55,20 @@ export default function ChatPage() {
       e.preventDefault();
       handleSendMessage();
     }
+  };
+
+  const handleNewChat = () => {
+    console.log("[v0] New chat shortcut triggered");
+    setMessages([
+      {
+        id: 1,
+        type: "assistant",
+        content:
+          "👋 Welcome to ProjectMap.io! I'm your AI assistant for creating beautiful project roadmaps. Tell me about your project and I'll help you turn your ideas into a clear, shareable roadmap.",
+        timestamp: "Just now",
+      },
+    ]);
+    setMessage("");
   };
 
   const quickStarters = [
@@ -199,8 +217,24 @@ export default function ChatPage() {
         {/* Input Area */}
         <Card className="p-4 bg-card border-border sticky bottom-4">
           <div className="flex gap-3">
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              onChange={e => {
+                console.log("[v0] File selected:", e.target.files?.[0]?.name);
+              }}
+            />
+            <Button
+              variant="outline"
+              size="icon"
+              className="shrink-0 bg-transparent"
+            >
+              <Paperclip className="w-4 h-4" />
+            </Button>
             <div className="flex-1">
               <Input
+                ref={inputRef}
                 placeholder="Describe your project idea or ask for help with your roadmap..."
                 value={message}
                 onChange={e => setMessage(e.target.value)}

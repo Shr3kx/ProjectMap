@@ -153,11 +153,15 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
             <div className="flex size-6 items-center justify-center rounded-md bg-primary/15 text-primary">
               <Sparkles className="size-4" />
             </div>
-            <span className="text-sm font-semibold">Mimir</span>
+            <span className="text-sm font-semibold">ProjectMap</span>
           </div>
 
           <div className="p-2">
-            <Button className="w-full" size="sm" onClick={handleCreateChat}>
+            <Button
+              className="w-full retro-button "
+              size="sm"
+              onClick={handleCreateChat}
+            >
               <MessageSquare className="mr-2 size-4" />
               New Chat
             </Button>
@@ -591,7 +595,7 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
         <SidebarFooter>
           <Separator className="mx-2" />
           <div className="text-muted-foreground px-2 py-2 text-center text-xs">
-            Ask Mimir, Know More.
+            Ask ProjectMap, Know More.
           </div>
         </SidebarFooter>
       </Sidebar>

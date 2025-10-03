@@ -39,6 +39,7 @@
   --sidebar-ring: oklch(0.708 0 0);
   --surface-rgb: 255, 255, 255;
   --divider-rgb: 255, 255, 255;
+  --btn-border: oklch(0 0 0);
 }
 
 .dark {
@@ -76,6 +77,7 @@
   --sidebar-ring: oklch(0.439 0 0);
   --surface-rgb: 30, 30, 30;
   --divider-rgb: 50, 50, 50;
+  --btn-border: oklch(1 0 0);
 }
 @theme inline {
   --font-sans: var(--font-geist-sans);
@@ -116,6 +118,7 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-btn-border: var(--btn-border);
 }
 
 @layer base {
@@ -146,7 +149,8 @@
     );
     backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.05);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1),
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.1),
       inset 0 0 0 1px rgba(255, 255, 255, 0.05);
   }
 
@@ -227,14 +231,15 @@
   }
 }
 
-/* Custom effects */
 .skeuomorphic-button {
   background: linear-gradient(
     to bottom,
     color-mix(in hsl, var(--primary) 95%, transparent),
     color-mix(in hsl, var(--primary) 70%, transparent)
   );
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2), 0 2px 6px rgba(0, 0, 0, 0.1),
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    0 2px 6px rgba(0, 0, 0, 0.1),
     inset 0 1px rgba(255, 255, 255, 0.15);
   border: 1px solid color-mix(in hsl, var(--primary) 50%, transparent);
   transform: translateY(0);
@@ -250,7 +255,9 @@
     color-mix(in hsl, var(--primary) 80%, transparent)
   );
   transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 4px 8px rgba(0, 0, 0, 0.1),
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.2),
+    0 4px 8px rgba(0, 0, 0, 0.1),
     inset 0 1px rgba(255, 255, 255, 0.15);
 }
 
@@ -261,5 +268,19 @@
     color-mix(in hsl, var(--primary) 90%, transparent)
   );
   transform: translateY(1px);
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.15), inset 0 1px 1px rgba(0, 0, 0, 0.1);
+  box-shadow:
+    0 1px 1px rgba(0, 0, 0, 0.15),
+    inset 0 1px 1px rgba(0, 0, 0, 0.1);
+}
+
+.retro-button {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border: 3px solid var(--btn-border);
+  box-shadow: 4px 4px 0px var(--btn-border);
+  transition: transform 0.1s;
+}
+.retro-button:active {
+  transform: translate(4px, 4px);
+  box-shadow: none;
 }
