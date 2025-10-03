@@ -43,15 +43,22 @@ function applyTheme(preset: ThemePreset) {
 }
 
 export function ThemeSwitcher() {
-  const [currentId, setCurrentId] = React.useState<string>(() => {
-    if (typeof window === "undefined") return "dark-green";
-    return localStorage.getItem(STORAGE_KEY) || "dark-green";
-  });
+  const [currentId, setCurrentId] = React.useState<string>("dark-green");
+  const [mounted, setMounted] = React.useState(false);
+
+  // Initialize theme from localStorage after component mounts
+  React.useEffect(() => {
+    const storedId = localStorage.getItem(STORAGE_KEY) || "dark-green";
+    setCurrentId(storedId);
+    setMounted(true);
+  }, []);
 
   React.useEffect(() => {
-    const initial = themePresets[currentId] ?? themePresets["dark-green"];
-    applyTheme(initial);
-  }, []); // apply once on mount to avoid FOUC on subsequent navigations
+    if (mounted) {
+      const initial = themePresets[currentId] ?? themePresets["dark-green"];
+      applyTheme(initial);
+    }
+  }, [currentId, mounted]); // apply theme when currentId changes or component mounts
 
   const currentPreset = themePresets[currentId] ?? themePresets["dark-green"];
 
@@ -74,10 +81,16 @@ export function ThemeSwitcher() {
           <Button
             variant="default"
             className="skeuomorphic-button"
-            aria-label={`Current theme: ${currentPreset.name}`}
+            aria-label={
+              mounted
+                ? `Current theme: ${currentPreset.name}`
+                : "Theme switcher"
+            }
           >
             <PaintbrushVertical className="size-4" aria-hidden="true" />
-            <span className="sr-only">{`Theme: ${currentPreset.name}`}</span>
+            <span className="sr-only">
+              {mounted ? `Theme: ${currentPreset.name}` : "Theme switcher"}
+            </span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">

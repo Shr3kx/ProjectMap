@@ -141,8 +141,8 @@ export default function ChatPage() {
                   msg.type === "user"
                     ? "justify-end"
                     : isWelcome
-                    ? "justify-center"
-                    : "justify-start"
+                      ? "justify-center"
+                      : "justify-start"
                 }`}
               >
                 <div
