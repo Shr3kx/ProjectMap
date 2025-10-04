@@ -1,8 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@import url("https://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&display=swap");
-
 :root {
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
@@ -80,8 +78,8 @@
   --btn-border: oklch(1 0 0);
 }
 @theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -139,7 +137,11 @@
   .scrollbar-none::-webkit-scrollbar {
     display: none;
   }
-
+  ::-moz-selection,
+  ::selection {
+    color: var(--foreground);
+    background: var(--accent);
+  }
   .glass-effect {
     @apply backdrop-blur-xl bg-white/5 border border-white/10 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)];
     background: linear-gradient(
@@ -283,4 +285,8 @@
 .retro-button:active {
   transform: translate(4px, 4px);
   box-shadow: none;
+}
+
+.response-card {
+  box-shadow: rgba(0, 0, 0, 0.15) 1.95px 1.95px 2.6px;
 }

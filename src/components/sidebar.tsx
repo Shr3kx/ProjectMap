@@ -158,7 +158,7 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
 
           <div className="p-2">
             <Button
-              className="w-full retro-button "
+              className="w-full retro-button"
               size="sm"
               onClick={handleCreateChat}
             >

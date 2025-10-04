@@ -1,8 +1,9 @@
 "use client";
+import { useState } from "react";
 import ThemeSwitcher from "@/components/theme-switcher";
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { SignInButton, useUser, UserButton } from "@clerk/nextjs";
-import { Github } from "lucide-react";
+import { Github, Info } from "lucide-react";
 import { Button } from "./ui/button";
 import Link from "next/link";
 export function AppHeader() {

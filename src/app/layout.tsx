@@ -1,13 +1,23 @@
 import type React from "react";
 import type { Metadata } from "next";
-import { GeistSans } from "geist/font/sans";
-import { GeistMono } from "geist/font/mono";
+import { Outfit, Fira_Code } from "next/font/google";
 import "./globals.css";
 import { themePresets } from "@/lib/themes";
 import { Suspense } from "react";
 import { ClerkProvider } from "@clerk/nextjs";
 import ConvexClientProvider from "@/ConvexClientProvider";
 import { SyncUser } from "@/components/SyncUsers";
+
+const outfit = Outfit({
+  subsets: ["latin"],
+  variable: "--font-sans",
+});
+
+const fira_code = Fira_Code({
+  subsets: ["latin"],
+  variable: "--font-mono",
+});
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -44,7 +54,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
+      <body className={`font-sans ${outfit.variable} ${fira_code.variable}`}>
         <ClerkProvider>
           <ConvexClientProvider>
             <Suspense fallback={null}>{children}</Suspense>

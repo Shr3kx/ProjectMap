@@ -174,7 +174,7 @@ export const themePresets: Record<string, ThemePreset> = {
       sidebar: "240 10% 7%",
       "sidebar-foreground": "0 0% 98%",
       "sidebar-border": "240 3.7% 15.9%",
-      "btn-border": "0 0% 98%", // White border for dark theme
+      "btn-border": "0 0% 98%",
     },
   },
   "dark-amethyst": {

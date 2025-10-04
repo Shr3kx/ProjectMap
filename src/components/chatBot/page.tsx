@@ -6,56 +6,57 @@ import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Send, FolderKanban, Map, Users, Zap, Paperclip } from "lucide-react";
+import {
+  Send,
+  FolderKanban,
+  Map,
+  Users,
+  Zap,
+  Paperclip,
+  Copy,
+  RotateCw,
+  Trash2,
+} from "lucide-react";
 
 export default function ChatPage() {
   const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState([
+
+  const getFormattedTime = () => {
+    const now = new Date();
+    return now.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
+  const [messages, setMessages] = useState<
+    Array<{
+      id: number;
+      type: "assistant" | "user";
+      content: string;
+      timestamp: string;
+      isLoading?: boolean;
+      responseTime?: number;
+    }>
+  >([
     {
       id: 1,
       type: "assistant",
       content:
         "👋 Welcome to ProjectMap.io! I'm your AI assistant for creating beautiful project roadmaps. Tell me about your project and I'll help you turn your ideas into a clear, shareable roadmap.",
-      timestamp: "Just now",
+      timestamp: new Date().toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      }),
     },
   ]);
-  const [shortcutsModalOpen, setShortcutsModalOpen] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleSendMessage = () => {
-    if (!message.trim()) return;
-
-    const newMessage = {
-      id: messages.length + 1,
-      type: "user",
-      content: message,
-      timestamp: "Just now",
-    };
-
-    setMessages([...messages, newMessage]);
-    setMessage("");
-
-    // Simulate AI response
-    setTimeout(() => {
-      const aiResponse = {
-        id: messages.length + 2,
-        type: "assistant",
-        content:
-          "Great! Let me help you create a roadmap for that. I'll break this down into clear milestones and tasks. What's your target timeline?",
-        timestamp: "Just now",
-      };
-      setMessages(prev => [...prev, aiResponse]);
-    }, 1000);
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleNewChat = () => {
     console.log("[v0] New chat shortcut triggered");
@@ -65,10 +66,90 @@ export default function ChatPage() {
         type: "assistant",
         content:
           "👋 Welcome to ProjectMap.io! I'm your AI assistant for creating beautiful project roadmaps. Tell me about your project and I'll help you turn your ideas into a clear, shareable roadmap.",
-        timestamp: "Just now",
+        timestamp: getFormattedTime(),
       },
     ]);
     setMessage("");
+  };
+
+  const handleSendMessage = async () => {
+    if (!message.trim() || isLoading) return;
+
+    const userMessage = message;
+    const currentTime = getFormattedTime();
+    const startTime = Date.now();
+    const newMessage = {
+      id: messages.length + 1,
+      type: "user" as const,
+      content: userMessage,
+      timestamp: currentTime,
+    };
+
+    const loadingMessage = {
+      id: messages.length + 2,
+      type: "assistant" as const,
+      content: "",
+      timestamp: currentTime,
+      isLoading: true,
+    };
+
+    setMessages(prev => [...prev, newMessage, loadingMessage]);
+    setMessage("");
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ message: userMessage }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to get response from AI");
+      }
+
+      const data = await response.json();
+      const endTime = Date.now();
+      const responseTime = ((endTime - startTime) / 1000).toFixed(1);
+
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.isLoading
+            ? {
+                ...msg,
+                content: data.reply,
+                isLoading: false,
+                responseTime: parseFloat(responseTime),
+              }
+            : msg
+        )
+      );
+    } catch (error) {
+      console.error("Error sending message:", error);
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.isLoading
+            ? {
+                ...msg,
+                content:
+                  "Sorry, I'm having trouble connecting. Please try again later.",
+                isLoading: false,
+              }
+            : msg
+        )
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
   };
 
   const quickStarters = [
@@ -165,8 +246,10 @@ export default function ChatPage() {
               >
                 <div
                   className={`${
-                    isWelcome ? "w-full max-w-2xl" : "max-w-[80%]"
-                  } ${msg.type === "user" ? "order-2" : "order-1"}`}
+                    msg.type === "user" ? "max-w-[80%]" : "w-full max-w-2xl"
+                  } ${
+                    msg.type === "user" ? "order-2" : "order-1"
+                  } flex flex-col`}
                 >
                   {msg.type === "assistant" && (
                     <div className="flex items-center gap-2 mb-2">
@@ -184,20 +267,144 @@ export default function ChatPage() {
                   <Card
                     className={`p-4 ${
                       msg.type === "user"
-                        ? "bg-primary text-primary-foreground ml-4"
-                        : "bg-card border-border"
+                        ? "bg-primary text-primary-foreground ml-4 rounded-2xl"
+                        : "bg-card response-card rounded-2xl"
                     }`}
                   >
-                    <p
-                      className={`text-sm leading-relaxed ${
-                        msg.type === "user"
-                          ? "text-primary-foreground"
-                          : "text-foreground"
-                      }`}
-                    >
-                      {msg.content}
-                    </p>
+                    {msg.isLoading ? (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin"></div>
+                        <span>ProjectMap is thinking...</span>
+                      </div>
+                    ) : (
+                      <p
+                        className={`text-sm leading-relaxed ${
+                          msg.type === "user"
+                            ? "text-primary-foreground"
+                            : "text-foreground"
+                        }`}
+                      >
+                        {msg.content}
+                      </p>
+                    )}
                   </Card>
+                  {msg.type === "assistant" && !msg.isLoading && !isWelcome && (
+                    <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        <span>ProjectMap</span>
+                        <span>•</span>
+                        <span>Responded in {msg.responseTime || 0}s</span>
+                        <span>•</span>
+                        <span>{msg.timestamp}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 hover:bg-accent"
+                          onClick={() => {
+                            navigator.clipboard.writeText(msg.content);
+                          }}
+                        >
+                          <Copy className="w-3 h-3" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 hover:bg-accent"
+                          onClick={async () => {
+                            const userMsg = messages.find(
+                              m => m.type === "user" && m.id === msg.id - 1
+                            );
+                            if (userMsg) {
+                              setMessages(prev =>
+                                prev.filter(m => m.id !== msg.id)
+                              );
+                              const currentTime = getFormattedTime();
+                              const startTime = Date.now();
+                              const loadingMessage = {
+                                id: msg.id,
+                                type: "assistant" as const,
+                                content: "",
+                                timestamp: currentTime,
+                                isLoading: true,
+                              };
+                              setMessages(prev => [...prev, loadingMessage]);
+                              setIsLoading(true);
+                              try {
+                                const response = await fetch("/api/chat", {
+                                  method: "POST",
+                                  headers: {
+                                    "Content-Type": "application/json",
+                                  },
+                                  body: JSON.stringify({
+                                    message: userMsg.content,
+                                  }),
+                                });
+                                if (!response.ok) {
+                                  throw new Error(
+                                    "Failed to get response from AI"
+                                  );
+                                }
+                                const data = await response.json();
+                                const endTime = Date.now();
+                                const responseTime = (
+                                  (endTime - startTime) /
+                                  1000
+                                ).toFixed(1);
+                                setMessages(prev =>
+                                  prev.map(m =>
+                                    m.isLoading && m.id === msg.id
+                                      ? {
+                                          ...m,
+                                          content: data.reply,
+                                          isLoading: false,
+                                          responseTime:
+                                            parseFloat(responseTime),
+                                        }
+                                      : m
+                                  )
+                                );
+                              } catch (error) {
+                                console.error(
+                                  "Error regenerating message:",
+                                  error
+                                );
+                                setMessages(prev =>
+                                  prev.map(m =>
+                                    m.isLoading && m.id === msg.id
+                                      ? {
+                                          ...m,
+                                          content:
+                                            "Sorry, I'm having trouble connecting. Please try again later.",
+                                          isLoading: false,
+                                        }
+                                      : m
+                                  )
+                                );
+                              } finally {
+                                setIsLoading(false);
+                              }
+                            }
+                          }}
+                        >
+                          <RotateCw className="w-3 h-3" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 hover:bg-accent"
+                          onClick={() => {
+                            setMessages(prev =>
+                              prev.filter(m => m.id !== msg.id)
+                            );
+                          }}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                   {msg.type === "user" && (
                     <div className="flex items-center justify-end gap-2 mt-2">
                       <span className="text-xs text-muted-foreground">
@@ -215,7 +422,7 @@ export default function ChatPage() {
         </div>
 
         {/* Input Area */}
-        <Card className="p-4 bg-card border-border sticky bottom-4">
+        <Card className="p-4 bg-card border-border glass-card sticky bottom-4">
           <div className="flex gap-3">
             <input
               ref={fileInputRef}
@@ -229,6 +436,7 @@ export default function ChatPage() {
               variant="outline"
               size="icon"
               className="shrink-0 bg-transparent"
+              onClick={() => fileInputRef.current?.click()}
             >
               <Paperclip className="w-4 h-4" />
             </Button>
@@ -244,10 +452,14 @@ export default function ChatPage() {
             </div>
             <Button
               onClick={handleSendMessage}
-              disabled={!message.trim()}
+              disabled={!message.trim() || isLoading}
               className="bg-primary hover:bg-primary/90 text-primary-foreground"
             >
-              <Send className="w-4 h-4" />
+              {isLoading ? (
+                <div className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin" />
+              ) : (
+                <Send className="w-4 h-4" />
+              )}
             </Button>
           </div>
           <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
@@ -256,7 +468,7 @@ export default function ChatPage() {
             </p>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-              AI Assistant Ready
+              {isLoading ? "AI is typing..." : "AI Assistant Ready"}
             </div>
           </div>
         </Card>
@@ -264,3 +476,4 @@ export default function ChatPage() {
     </div>
   );
 }
+this;
