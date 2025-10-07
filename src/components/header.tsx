@@ -19,8 +19,8 @@ export function AppHeader() {
     >
       <div className="flex h-12 items-center justify-between px-3 md:h-14 md:px-4">
         {/* Left: Sidebar trigger + brand */}
-        <div className="flex items-center gap-2">
-          <SidebarTrigger className="size-8 md:size-7" />
+        <div className="flex items-center gap-2 ">
+          <SidebarTrigger className="size-8 md:size-7 cursor-pointer" />
         </div>
 
         {/* Right: Auth + Theme switcher */}
@@ -30,7 +30,11 @@ export function AppHeader() {
           ) : (
             <SignInButton mode="modal">
               <Button variant="ghost" size="sm" asChild>
-                <span tabIndex={0} aria-label="Log in">
+                <span
+                  tabIndex={0}
+                  aria-label="Log in"
+                  className="cursor-pointer"
+                >
                   Log in
                 </span>
               </Button>
@@ -45,7 +49,7 @@ export function AppHeader() {
               className="size-8"
               aria-label="Keyboard shortcuts"
             >
-              <Github className="size-4" />
+              <Github className="size-4 cursor-pointer" />
             </Button>
           </Link>
         </div>

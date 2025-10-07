@@ -18,6 +18,11 @@ const fira_code = Fira_Code({
   variable: "--font-mono",
 });
 
+export const metadata = {
+  title: "ProjectMap",
+  description: "Map your project ideas",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -57,8 +62,8 @@ export default function RootLayout({
       <body className={`font-sans ${outfit.variable} ${fira_code.variable}`}>
         <ClerkProvider>
           <ConvexClientProvider>
-            <Suspense fallback={null}>{children}</Suspense>
             <SyncUser />
+            <Suspense fallback={null}>{children}</Suspense>
           </ConvexClientProvider>
         </ClerkProvider>
       </body>

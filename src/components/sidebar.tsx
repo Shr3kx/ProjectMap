@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Sidebar,
   SidebarContent,
@@ -51,24 +51,32 @@ import {
   Trash2,
   Edit2,
   FolderInput,
+  Loader2,
 } from "lucide-react";
 import type * as React from "react";
 import AppHeader from "./header";
 import type { SidebarState } from "@/lib/sidebar-types";
 import {
-  createFolder,
-  renameFolder,
-  deleteFolder,
-  createChat,
-  togglePinChat,
-  assignChatToFolder,
-  deleteChat,
+  createFolder as createLocalFolder,
+  renameFolder as renameLocalFolder,
+  deleteFolder as deleteLocalFolder,
+  createChat as createLocalChat,
+  togglePinChat as toggleLocalPinChat,
+  assignChatToFolder as assignLocalChatToFolder,
+  deleteChat as deleteLocalChat,
   getChatsByDate,
   getPinnedChats,
   getChatsByFolder,
 } from "@/lib/sidebar-actions";
 
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
+import { useUser } from "@clerk/nextjs";
+
 export function AppSidebar({ children }: { children: React.ReactNode }) {
+  const { user, isSignedIn, isLoaded } = useUser();
+  const userId = user?.id;
+
   const [state, setState] = useState<SidebarState>({
     chats: [],
     folders: [],
@@ -83,46 +91,237 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
   const [newFolderName, setNewFolderName] = useState("");
   const [renameFolderId, setRenameFolderId] = useState<string | null>(null);
   const [renameFolderName, setRenameFolderName] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleCreateChat = () => {
-    setState(prev => createChat(prev, "New Chat"));
-  };
+  // Convex mutations
+  const createConvexFolder = useMutation(api.folders.createFolder);
+  const updateConvexFolder = useMutation(api.folders.updateFolder);
+  const deleteConvexFolder = useMutation(api.folders.deleteFolder);
+  const createConvexChat = useMutation(api.chats.createChat);
+  const updateConvexChat = useMutation(api.chats.updateChat);
+  const deleteConvexChat = useMutation(api.chats.deleteChat);
 
-  const handleCreateFolder = () => {
-    if (newFolderName.trim()) {
-      setState(prev => createFolder(prev, newFolderName.trim()));
-      setNewFolderName("");
-      setIsNewFolderDialogOpen(false);
+  // Convex queries
+  const folders = useQuery(
+    api.folders.getUserFolders,
+    isSignedIn && userId ? { userId } : "skip"
+  );
+  const chats = useQuery(
+    api.chats.getUserChats,
+    isSignedIn && userId ? { userId } : "skip"
+  );
+  const pinnedChatsData = useQuery(
+    api.chats.getPinnedChats,
+    isSignedIn && userId ? { userId } : "skip"
+  );
+
+  // Load data from Convex when user is signed in
+  useEffect(() => {
+    if (isLoaded && isSignedIn && userId && folders && chats) {
+      console.log("Loading data from Convex:", { userId, folders, chats });
+      // Convert Convex data to local state format
+      const formattedFolders = folders.map(folder => ({
+        id: folder._id,
+        name: folder.name,
+      }));
+
+      const formattedChats = chats.map(chat => ({
+        id: chat._id,
+        title: chat.title,
+        folderId: chat.folderId,
+        isPinned: chat.isPinned,
+        createdAt: new Date(chat.createdAt),
+      }));
+
+      setState({
+        folders: formattedFolders,
+        chats: formattedChats,
+      });
+    } else if (isLoaded && !isSignedIn) {
+      console.log("User not signed in, using local state");
+    }
+  }, [isLoaded, isSignedIn, userId, folders, chats]);
+
+  const handleCreateChat = async () => {
+    setIsLoading(true);
+    try {
+      if (userId) {
+        // Create chat in Convex
+        const chatId = await createConvexChat({
+          userId,
+          initialMessage: "New conversation",
+          folderId: undefined,
+        });
+
+        // Convex will automatically update the queries
+      } else {
+        // Fallback to local state for unauthenticated users
+        setState(prev => createLocalChat(prev, "New Chat"));
+      }
+    } catch (error) {
+      console.error("Error creating chat:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleRenameFolder = () => {
-    if (renameFolderId && renameFolderName.trim()) {
-      setState(prev =>
-        renameFolder(prev, renameFolderId, renameFolderName.trim())
-      );
+  const handleCreateFolder = async () => {
+    if (!newFolderName.trim()) return;
+
+    setIsLoading(true);
+    try {
+      if (isSignedIn && userId) {
+        console.log("Creating folder in Convex with userId:", userId);
+        // Create folder in Convex
+        const result = await createConvexFolder({
+          userId: userId,
+          name: newFolderName.trim(),
+        });
+        console.log("Folder created in Convex:", result);
+
+        // Force refresh the folders query
+        setTimeout(() => {
+          // This will trigger a re-fetch of the folders
+          const dummyEvent = new Event("focus");
+          window.dispatchEvent(dummyEvent);
+        }, 500);
+      } else {
+        // Fallback to local state for unauthenticated users
+        setState(prev => createLocalFolder(prev, newFolderName.trim()));
+      }
+
+      setNewFolderName("");
+      setIsNewFolderDialogOpen(false);
+    } catch (error) {
+      console.error("Error creating folder:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRenameFolder = async () => {
+    if (!renameFolderId || !renameFolderName.trim()) return;
+
+    setIsLoading(true);
+    try {
+      if (userId) {
+        // Update folder in Convex
+        await updateConvexFolder({
+          folderId: renameFolderId as any,
+          name: renameFolderName.trim(),
+        });
+
+        // Convex will automatically update the queries
+      } else {
+        // Fallback to local state for unauthenticated users
+        setState(prev =>
+          renameLocalFolder(prev, renameFolderId, renameFolderName.trim())
+        );
+      }
+
       setRenameFolderId(null);
       setRenameFolderName("");
       setIsRenameFolderDialogOpen(false);
+    } catch (error) {
+      console.error("Error renaming folder:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleDeleteFolder = (folderId: string) => {
-    setState(prev => deleteFolder(prev, folderId));
-    expandedFolders.delete(folderId);
-    setExpandedFolders(new Set(expandedFolders));
+  const handleDeleteFolder = async (folderId: string) => {
+    setIsLoading(true);
+    try {
+      if (userId) {
+        // Delete folder in Convex
+        await deleteConvexFolder({
+          folderId: folderId as any,
+        });
+
+        // Convex will automatically update the queries
+      } else {
+        // Fallback to local state for unauthenticated users
+        setState(prev => deleteLocalFolder(prev, folderId));
+      }
+
+      expandedFolders.delete(folderId);
+      setExpandedFolders(new Set(expandedFolders));
+    } catch (error) {
+      console.error("Error deleting folder:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleTogglePin = (chatId: string) => {
-    setState(prev => togglePinChat(prev, chatId));
+  const handleTogglePin = async (chatId: string) => {
+    setIsLoading(true);
+    try {
+      if (userId) {
+        // Find the current chat to toggle its pinned status
+        const chat = state.chats.find(c => c.id === chatId);
+        if (chat) {
+          await updateConvexChat({
+            chatId: chatId as any,
+            isPinned: !chat.isPinned,
+          });
+        }
+
+        // Convex will automatically update the queries
+      } else {
+        // Fallback to local state for unauthenticated users
+        setState(prev => toggleLocalPinChat(prev, chatId));
+      }
+    } catch (error) {
+      console.error("Error toggling pin:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleAssignToFolder = (chatId: string, folderId: string | null) => {
-    setState(prev => assignChatToFolder(prev, chatId, folderId));
+  const handleAssignToFolder = async (
+    chatId: string,
+    folderId: string | null
+  ) => {
+    setIsLoading(true);
+    try {
+      if (userId) {
+        // Update chat in Convex
+        await updateConvexChat({
+          chatId: chatId as any,
+          folderId: folderId as any,
+        });
+
+        // Convex will automatically update the queries
+      } else {
+        // Fallback to local state for unauthenticated users
+        setState(prev => assignLocalChatToFolder(prev, chatId, folderId));
+      }
+    } catch (error) {
+      console.error("Error assigning chat to folder:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleDeleteChat = (chatId: string) => {
-    setState(prev => deleteChat(prev, chatId));
+  const handleDeleteChat = async (chatId: string) => {
+    setIsLoading(true);
+    try {
+      if (userId) {
+        // Delete chat in Convex
+        await deleteConvexChat({
+          chatId: chatId as any,
+        });
+
+        // Convex will automatically update the queries
+      } else {
+        // Fallback to local state for unauthenticated users
+        setState(prev => deleteLocalChat(prev, chatId));
+      }
+    } catch (error) {
+      console.error("Error deleting chat:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const toggleFolder = (folderId: string) => {
@@ -141,7 +340,18 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
     setIsRenameFolderDialogOpen(true);
   };
 
-  const pinnedChats = getPinnedChats(state.chats);
+  // Use Convex data if available, otherwise fall back to local state
+  const pinnedChats =
+    userId && pinnedChatsData
+      ? pinnedChatsData.map(chat => ({
+          id: chat._id,
+          title: chat.title,
+          folderId: chat.folderId,
+          isPinned: chat.isPinned,
+          createdAt: new Date(chat.createdAt),
+        }))
+      : getPinnedChats(state.chats);
+
   const chatsByDate = getChatsByDate(state.chats);
 
   return (
@@ -158,7 +368,7 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
 
           <div className="p-2">
             <Button
-              className="w-full retro-button"
+              className="w-full skeuomorphic-button"
               size="sm"
               onClick={handleCreateChat}
             >
