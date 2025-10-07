@@ -21,6 +21,7 @@ import {
   RotateCw,
   Trash2,
 } from "lucide-react";
+import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 
 export default function ChatPage() {
   const { user } = useUser();
@@ -321,14 +322,10 @@ export default function ChatPage() {
                         <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin"></div>
                         <span>ProjectMap is thinking...</span>
                       </div>
+                    ) : msg.type === "assistant" ? (
+                      <MarkdownRenderer content={msg.content} />
                     ) : (
-                      <p
-                        className={`text-sm leading-relaxed ${
-                          msg.type === "user"
-                            ? "text-primary-foreground"
-                            : "text-foreground"
-                        }`}
-                      >
+                      <p className="text-sm leading-relaxed text-primary-foreground">
                         {msg.content}
                       </p>
                     )}
@@ -558,13 +555,6 @@ export default function ChatPage() {
 
         {/* Input Area */}
         <Card className="p-4 bg-card border-border glass-card sticky bottom-4">
-          {!user && messages.length > 1 && (
-            <div className="text-center py-2 mb-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
-              <p className="text-sm text-blue-700 dark:text-blue-300">
-                💡 Sign in to save your conversations and access them later!
-              </p>
-            </div>
-          )}
           <div className="flex gap-3">
             <input
               ref={fileInputRef}
