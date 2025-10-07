@@ -2,7 +2,11 @@
 
 import type React from "react";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useUser } from "@clerk/nextjs";
+import { useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import type { Id } from "../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -19,7 +23,13 @@ import {
 } from "lucide-react";
 
 export default function ChatPage() {
+  const { user } = useUser();
+  const createChat = useMutation(api.chats.createChat);
+  const addMessage = useMutation(api.chats.addMessage);
+
   const [message, setMessage] = useState("");
+  const [currentChatId, setCurrentChatId] = useState<Id<"chats"> | null>(null);
+  const [isChatCreated, setIsChatCreated] = useState(false);
 
   const getFormattedTime = () => {
     const now = new Date();
@@ -70,6 +80,8 @@ export default function ChatPage() {
       },
     ]);
     setMessage("");
+    setCurrentChatId(null);
+    setIsChatCreated(false);
   };
 
   const handleSendMessage = async () => {
@@ -98,6 +110,29 @@ export default function ChatPage() {
     setIsLoading(true);
 
     try {
+      let chatId = currentChatId;
+
+      // Only save to database if user is authenticated
+      if (user) {
+        // Create a new chat if this is the first message
+        if (!isChatCreated && !currentChatId) {
+          chatId = await createChat({
+            userId: user.id,
+            initialMessage: userMessage,
+          });
+          setCurrentChatId(chatId);
+          setIsChatCreated(true);
+        } else if (chatId) {
+          // Add user message to existing chat
+          await addMessage({
+            chatId,
+            userId: user.id,
+            content: userMessage,
+            type: "user",
+          });
+        }
+      }
+
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: {
@@ -113,6 +148,16 @@ export default function ChatPage() {
       const data = await response.json();
       const endTime = Date.now();
       const responseTime = ((endTime - startTime) / 1000).toFixed(1);
+
+      // Save AI response to database only if user is authenticated
+      if (user && chatId) {
+        await addMessage({
+          chatId,
+          userId: user.id,
+          content: data.reply,
+          type: "assistant",
+        });
+      }
 
       setMessages(prev =>
         prev.map(msg =>
@@ -176,7 +221,7 @@ export default function ChatPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-background ">
+    <div className="min-h-screen bg-background overflow-y-auto">
       <div className="container mx-auto px-4 py-2 max-w-4xl">
         {/* Welcome Section */}
         {messages.length === 1 && (
@@ -313,6 +358,87 @@ export default function ChatPage() {
                           size="icon"
                           className="h-6 w-6 hover:bg-accent"
                           onClick={async () => {
+                            if (!user) {
+                              // For guest users, just regenerate without saving
+                              const userMsg = messages.find(
+                                m => m.type === "user" && m.id === msg.id - 1
+                              );
+                              if (userMsg) {
+                                setMessages(prev =>
+                                  prev.filter(m => m.id !== msg.id)
+                                );
+                                const currentTime = getFormattedTime();
+                                const startTime = Date.now();
+                                const loadingMessage = {
+                                  id: msg.id,
+                                  type: "assistant" as const,
+                                  content: "",
+                                  timestamp: currentTime,
+                                  isLoading: true,
+                                };
+                                setMessages(prev => [...prev, loadingMessage]);
+                                setIsLoading(true);
+                                try {
+                                  const response = await fetch("/api/chat", {
+                                    method: "POST",
+                                    headers: {
+                                      "Content-Type": "application/json",
+                                    },
+                                    body: JSON.stringify({
+                                      message: userMsg.content,
+                                    }),
+                                  });
+                                  if (!response.ok) {
+                                    throw new Error(
+                                      "Failed to get response from AI"
+                                    );
+                                  }
+                                  const data = await response.json();
+                                  const endTime = Date.now();
+                                  const responseTime = (
+                                    (endTime - startTime) /
+                                    1000
+                                  ).toFixed(1);
+
+                                  setMessages(prev =>
+                                    prev.map(m =>
+                                      m.isLoading && m.id === msg.id
+                                        ? {
+                                            ...m,
+                                            content: data.reply,
+                                            isLoading: false,
+                                            responseTime:
+                                              parseFloat(responseTime),
+                                          }
+                                        : m
+                                    )
+                                  );
+                                } catch (error) {
+                                  console.error(
+                                    "Error regenerating message:",
+                                    error
+                                  );
+                                  setMessages(prev =>
+                                    prev.map(m =>
+                                      m.isLoading && m.id === msg.id
+                                        ? {
+                                            ...m,
+                                            content:
+                                              "Sorry, I'm having trouble connecting. Please try again later.",
+                                            isLoading: false,
+                                          }
+                                        : m
+                                    )
+                                  );
+                                } finally {
+                                  setIsLoading(false);
+                                }
+                              }
+                              return;
+                            }
+
+                            if (!currentChatId) return;
+
                             const userMsg = messages.find(
                               m => m.type === "user" && m.id === msg.id - 1
                             );
@@ -352,6 +478,15 @@ export default function ChatPage() {
                                   (endTime - startTime) /
                                   1000
                                 ).toFixed(1);
+
+                                // Save regenerated AI response to database
+                                await addMessage({
+                                  chatId: currentChatId,
+                                  userId: user.id,
+                                  content: data.reply,
+                                  type: "assistant",
+                                });
+
                                 setMessages(prev =>
                                   prev.map(m =>
                                     m.isLoading && m.id === msg.id
@@ -423,6 +558,13 @@ export default function ChatPage() {
 
         {/* Input Area */}
         <Card className="p-4 bg-card border-border glass-card sticky bottom-4">
+          {!user && messages.length > 1 && (
+            <div className="text-center py-2 mb-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+              <p className="text-sm text-blue-700 dark:text-blue-300">
+                💡 Sign in to save your conversations and access them later!
+              </p>
+            </div>
+          )}
           <div className="flex gap-3">
             <input
               ref={fileInputRef}
