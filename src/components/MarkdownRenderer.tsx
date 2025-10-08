@@ -92,12 +92,9 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
             const codeString = String(children).replace(/\n$/, "");
 
             if (inline) {
-              // Inline code
+              // Inline code - styling handled by CSS
               return (
-                <code
-                  className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono text-accent-foreground"
-                  {...props}
-                >
+                <code {...props}>
                   {children}
                 </code>
               );
@@ -109,18 +106,18 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
                 <div className="absolute right-2 top-2 z-10">
                   <button
                     onClick={() => copyToClipboard(codeString)}
-                    className="p-2 bg-gray-700 hover:bg-gray-600 rounded-md transition-colors opacity-0 group-hover:opacity-100"
+                    className="code-copy-button p-2 rounded-md transition-colors opacity-0 group-hover:opacity-100"
                     aria-label="Copy code"
                   >
                     {copiedCode === codeString ? (
                       <Check size={14} className="text-green-400" />
                     ) : (
-                      <Copy size={14} className="text-gray-300" />
+                      <Copy size={14} />
                     )}
                   </button>
                 </div>
                 <code
-                  className={`block bg-muted p-4 rounded-lg text-sm font-mono overflow-x-auto ${className || ""}`}
+                  className={`block overflow-x-auto text-sm font-mono ${className || ""}`}
                   {...props}
                 >
                   {children}

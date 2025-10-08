@@ -4,7 +4,7 @@ import type React from "react";
 
 import { useState, useRef, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,13 @@ import {
 } from "lucide-react";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 
-export default function ChatPage() {
+export default function ChatPage({
+  selectedChatId,
+  isNewChat,
+}: {
+  selectedChatId?: string | null;
+  isNewChat?: boolean;
+}) {
   const { user } = useUser();
   const createChat = useMutation(api.chats.createChat);
   const addMessage = useMutation(api.chats.addMessage);
@@ -31,6 +37,13 @@ export default function ChatPage() {
   const [message, setMessage] = useState("");
   const [currentChatId, setCurrentChatId] = useState<Id<"chats"> | null>(null);
   const [isChatCreated, setIsChatCreated] = useState(false);
+  const [isLoadingChat, setIsLoadingChat] = useState(false);
+
+  // Query to load messages for the current chat
+  const currentChatMessages = useQuery(
+    api.chats.getChatMessages,
+    currentChatId ? { chatId: currentChatId } : "skip"
+  );
 
   const getFormattedTime = () => {
     const now = new Date();
@@ -68,6 +81,62 @@ export default function ChatPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isLoading, setIsLoading] = useState(false);
+
+  // Handle chat selection from sidebar
+  useEffect(() => {
+    if (selectedChatId && selectedChatId !== currentChatId) {
+      setCurrentChatId(selectedChatId as Id<"chats">);
+      setIsChatCreated(true);
+      setIsLoadingChat(true);
+    }
+  }, [selectedChatId, currentChatId]);
+
+  // Handle new chat reset
+  useEffect(() => {
+    if (isNewChat) {
+      // Reset all chat state to start fresh
+      setCurrentChatId(null);
+      setIsChatCreated(false);
+      setIsLoadingChat(false);
+      setMessage("");
+      // Reset to welcome message
+      setMessages([
+        {
+          id: 1,
+          type: "assistant",
+          content:
+            "👋 Welcome to ProjectMap.io! I'm your AI assistant for creating beautiful project roadmaps. Tell me about your project and I'll help you turn your ideas into a clear, shareable roadmap.",
+          timestamp: getFormattedTime(),
+        },
+      ]);
+    }
+  }, [isNewChat]);
+
+  // Load messages when a chat is selected
+  useEffect(() => {
+    if (currentChatMessages && currentChatMessages.length > 0) {
+      const formattedMessages = currentChatMessages.map((msg, index) => ({
+        id: index + 1,
+        type: msg.type as "user" | "assistant",
+        content: msg.content,
+        timestamp: new Date(msg.timestamp).toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        }),
+      }));
+      setMessages(formattedMessages);
+      setIsLoadingChat(false);
+    } else if (
+      currentChatId &&
+      currentChatMessages &&
+      currentChatMessages.length === 0
+    ) {
+      // Chat exists but has no messages, show empty state
+      setMessages([]);
+      setIsLoadingChat(false);
+    }
+  }, [currentChatMessages, currentChatId]);
 
   const handleNewChat = () => {
     console.log("[v0] New chat shortcut triggered");
@@ -225,7 +294,7 @@ export default function ChatPage() {
     <div className="min-h-screen bg-background overflow-y-auto">
       <div className="container mx-auto px-4 py-2 max-w-4xl">
         {/* Welcome Section */}
-        {messages.length === 1 && (
+        {/* {(messages.length === 1 || isNewChat) && ( */}
           <div className="text-center mb-8">
             <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium mb-4">
               <FolderKanban className="w-4 h-4" />
@@ -240,10 +309,10 @@ export default function ChatPage() {
               enterprise tools.
             </p>
           </div>
-        )}
+        {/*  )} */}
 
         {/* Quick Starters */}
-        {messages.length === 1 && (
+        {/* {(messages.length === 1 || isNewChat) && ( */}
           <div className="mb-8">
             <h3 className="text-sm font-medium text-muted-foreground mb-4 text-center">
               Quick starters
@@ -273,285 +342,309 @@ export default function ChatPage() {
               ))}
             </div>
           </div>
+        {/* )} */}
+
+        {/* Loading State */}
+        {isLoadingChat && (
+          <div className="flex items-center justify-center py-12">
+            <div className="flex items-center gap-3 text-muted-foreground">
+              <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+              <span>Loading conversation...</span>
+            </div>
+          </div>
         )}
 
         {/* Chat Messages */}
-        <div className="space-y-6 mb-8">
-          {messages.map((msg, index) => {
-            const isWelcome = index === 0 && msg.type === "assistant";
-            return (
-              <div
-                key={msg.id}
-                className={`flex ${
-                  msg.type === "user"
-                    ? "justify-end"
-                    : isWelcome
-                      ? "justify-center"
-                      : "justify-start"
-                }`}
-              >
+        {!isLoadingChat && (
+          <div className="space-y-6 mb-8">
+            {messages.map((msg, index) => {
+              const isWelcome = index === 0 && msg.type === "assistant";
+              return (
                 <div
-                  className={`${
-                    msg.type === "user" ? "max-w-[80%]" : "w-full max-w-2xl"
-                  } ${
-                    msg.type === "user" ? "order-2" : "order-1"
-                  } flex flex-col`}
+                  key={msg.id}
+                  className={`flex ${
+                    msg.type === "user"
+                      ? "justify-end"
+                      : isWelcome
+                        ? "justify-center"
+                        : "justify-start"
+                  }`}
                 >
-                  {msg.type === "assistant" && (
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                        <Map className="w-3 h-3 text-primary-foreground" />
-                      </div>
-                      <span className="text-sm font-medium text-foreground">
-                        ProjectMap AI
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {msg.timestamp}
-                      </span>
-                    </div>
-                  )}
-                  <Card
-                    className={`p-4 ${
-                      msg.type === "user"
-                        ? "bg-primary text-primary-foreground ml-4 rounded-2xl"
-                        : "bg-card response-card rounded-2xl"
-                    }`}
+                  <div
+                    className={`${
+                      msg.type === "user" ? "max-w-[80%]" : "w-full max-w-2xl"
+                    } ${
+                      msg.type === "user" ? "order-2" : "order-1"
+                    } flex flex-col`}
                   >
-                    {msg.isLoading ? (
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin"></div>
-                        <span>ProjectMap is thinking...</span>
+                    {msg.type === "assistant" && (
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                          <Map className="w-3 h-3 text-primary-foreground" />
+                        </div>
+                        <span className="text-sm font-medium text-foreground">
+                          ProjectMap AI
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {msg.timestamp}
+                        </span>
                       </div>
-                    ) : msg.type === "assistant" ? (
-                      <MarkdownRenderer content={msg.content} />
-                    ) : (
-                      <p className="text-sm leading-relaxed text-primary-foreground">
-                        {msg.content}
-                      </p>
                     )}
-                  </Card>
-                  {msg.type === "assistant" && !msg.isLoading && !isWelcome && (
-                    <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
-                      <div className="flex items-center gap-2">
-                        <span>ProjectMap</span>
-                        <span>•</span>
-                        <span>Responded in {msg.responseTime || 0}s</span>
-                        <span>•</span>
-                        <span>{msg.timestamp}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 hover:bg-accent"
-                          onClick={() => {
-                            navigator.clipboard.writeText(msg.content);
-                          }}
-                        >
-                          <Copy className="w-3 h-3" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 hover:bg-accent"
-                          onClick={async () => {
-                            if (!user) {
-                              // For guest users, just regenerate without saving
-                              const userMsg = messages.find(
-                                m => m.type === "user" && m.id === msg.id - 1
-                              );
-                              if (userMsg) {
+                    <Card
+                      className={`p-4 ${
+                        msg.type === "user"
+                          ? "bg-primary text-primary-foreground ml-4 rounded-2xl"
+                          : "bg-card response-card rounded-2xl"
+                      }`}
+                    >
+                      {msg.isLoading ? (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin"></div>
+                          <span>ProjectMap is thinking...</span>
+                        </div>
+                      ) : msg.type === "assistant" ? (
+                        <MarkdownRenderer content={msg.content} />
+                      ) : (
+                        <p className="text-sm leading-relaxed text-primary-foreground">
+                          {msg.content}
+                        </p>
+                      )}
+                    </Card>
+                    {msg.type === "assistant" &&
+                      !msg.isLoading &&
+                      !isWelcome && (
+                        <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
+                          <div className="flex items-center gap-2">
+                            <span>ProjectMap</span>
+                            <span>•</span>
+                            <span>Responded in {msg.responseTime || 0}s</span>
+                            <span>•</span>
+                            <span>{msg.timestamp}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 hover:bg-accent"
+                              onClick={() => {
+                                navigator.clipboard.writeText(msg.content);
+                              }}
+                            >
+                              <Copy className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 hover:bg-accent"
+                              onClick={async () => {
+                                if (!user) {
+                                  // For guest users, just regenerate without saving
+                                  const userMsg = messages.find(
+                                    m =>
+                                      m.type === "user" && m.id === msg.id - 1
+                                  );
+                                  if (userMsg) {
+                                    setMessages(prev =>
+                                      prev.filter(m => m.id !== msg.id)
+                                    );
+                                    const currentTime = getFormattedTime();
+                                    const startTime = Date.now();
+                                    const loadingMessage = {
+                                      id: msg.id,
+                                      type: "assistant" as const,
+                                      content: "",
+                                      timestamp: currentTime,
+                                      isLoading: true,
+                                    };
+                                    setMessages(prev => [
+                                      ...prev,
+                                      loadingMessage,
+                                    ]);
+                                    setIsLoading(true);
+                                    try {
+                                      const response = await fetch(
+                                        "/api/chat",
+                                        {
+                                          method: "POST",
+                                          headers: {
+                                            "Content-Type": "application/json",
+                                          },
+                                          body: JSON.stringify({
+                                            message: userMsg.content,
+                                          }),
+                                        }
+                                      );
+                                      if (!response.ok) {
+                                        throw new Error(
+                                          "Failed to get response from AI"
+                                        );
+                                      }
+                                      const data = await response.json();
+                                      const endTime = Date.now();
+                                      const responseTime = (
+                                        (endTime - startTime) /
+                                        1000
+                                      ).toFixed(1);
+
+                                      setMessages(prev =>
+                                        prev.map(m =>
+                                          m.isLoading && m.id === msg.id
+                                            ? {
+                                                ...m,
+                                                content: data.reply,
+                                                isLoading: false,
+                                                responseTime:
+                                                  parseFloat(responseTime),
+                                              }
+                                            : m
+                                        )
+                                      );
+                                    } catch (error) {
+                                      console.error(
+                                        "Error regenerating message:",
+                                        error
+                                      );
+                                      setMessages(prev =>
+                                        prev.map(m =>
+                                          m.isLoading && m.id === msg.id
+                                            ? {
+                                                ...m,
+                                                content:
+                                                  "Sorry, I'm having trouble connecting. Please try again later.",
+                                                isLoading: false,
+                                              }
+                                            : m
+                                        )
+                                      );
+                                    } finally {
+                                      setIsLoading(false);
+                                    }
+                                  }
+                                  return;
+                                }
+
+                                if (!currentChatId) return;
+
+                                const userMsg = messages.find(
+                                  m => m.type === "user" && m.id === msg.id - 1
+                                );
+                                if (userMsg) {
+                                  setMessages(prev =>
+                                    prev.filter(m => m.id !== msg.id)
+                                  );
+                                  const currentTime = getFormattedTime();
+                                  const startTime = Date.now();
+                                  const loadingMessage = {
+                                    id: msg.id,
+                                    type: "assistant" as const,
+                                    content: "",
+                                    timestamp: currentTime,
+                                    isLoading: true,
+                                  };
+                                  setMessages(prev => [
+                                    ...prev,
+                                    loadingMessage,
+                                  ]);
+                                  setIsLoading(true);
+                                  try {
+                                    const response = await fetch("/api/chat", {
+                                      method: "POST",
+                                      headers: {
+                                        "Content-Type": "application/json",
+                                      },
+                                      body: JSON.stringify({
+                                        message: userMsg.content,
+                                      }),
+                                    });
+                                    if (!response.ok) {
+                                      throw new Error(
+                                        "Failed to get response from AI"
+                                      );
+                                    }
+                                    const data = await response.json();
+                                    const endTime = Date.now();
+                                    const responseTime = (
+                                      (endTime - startTime) /
+                                      1000
+                                    ).toFixed(1);
+
+                                    // Save regenerated AI response to database
+                                    await addMessage({
+                                      chatId: currentChatId,
+                                      userId: user.id,
+                                      content: data.reply,
+                                      type: "assistant",
+                                    });
+
+                                    setMessages(prev =>
+                                      prev.map(m =>
+                                        m.isLoading && m.id === msg.id
+                                          ? {
+                                              ...m,
+                                              content: data.reply,
+                                              isLoading: false,
+                                              responseTime:
+                                                parseFloat(responseTime),
+                                            }
+                                          : m
+                                      )
+                                    );
+                                  } catch (error) {
+                                    console.error(
+                                      "Error regenerating message:",
+                                      error
+                                    );
+                                    setMessages(prev =>
+                                      prev.map(m =>
+                                        m.isLoading && m.id === msg.id
+                                          ? {
+                                              ...m,
+                                              content:
+                                                "Sorry, I'm having trouble connecting. Please try again later.",
+                                              isLoading: false,
+                                            }
+                                          : m
+                                      )
+                                    );
+                                  } finally {
+                                    setIsLoading(false);
+                                  }
+                                }
+                              }}
+                            >
+                              <RotateCw className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 hover:bg-accent"
+                              onClick={() => {
                                 setMessages(prev =>
                                   prev.filter(m => m.id !== msg.id)
                                 );
-                                const currentTime = getFormattedTime();
-                                const startTime = Date.now();
-                                const loadingMessage = {
-                                  id: msg.id,
-                                  type: "assistant" as const,
-                                  content: "",
-                                  timestamp: currentTime,
-                                  isLoading: true,
-                                };
-                                setMessages(prev => [...prev, loadingMessage]);
-                                setIsLoading(true);
-                                try {
-                                  const response = await fetch("/api/chat", {
-                                    method: "POST",
-                                    headers: {
-                                      "Content-Type": "application/json",
-                                    },
-                                    body: JSON.stringify({
-                                      message: userMsg.content,
-                                    }),
-                                  });
-                                  if (!response.ok) {
-                                    throw new Error(
-                                      "Failed to get response from AI"
-                                    );
-                                  }
-                                  const data = await response.json();
-                                  const endTime = Date.now();
-                                  const responseTime = (
-                                    (endTime - startTime) /
-                                    1000
-                                  ).toFixed(1);
-
-                                  setMessages(prev =>
-                                    prev.map(m =>
-                                      m.isLoading && m.id === msg.id
-                                        ? {
-                                            ...m,
-                                            content: data.reply,
-                                            isLoading: false,
-                                            responseTime:
-                                              parseFloat(responseTime),
-                                          }
-                                        : m
-                                    )
-                                  );
-                                } catch (error) {
-                                  console.error(
-                                    "Error regenerating message:",
-                                    error
-                                  );
-                                  setMessages(prev =>
-                                    prev.map(m =>
-                                      m.isLoading && m.id === msg.id
-                                        ? {
-                                            ...m,
-                                            content:
-                                              "Sorry, I'm having trouble connecting. Please try again later.",
-                                            isLoading: false,
-                                          }
-                                        : m
-                                    )
-                                  );
-                                } finally {
-                                  setIsLoading(false);
-                                }
-                              }
-                              return;
-                            }
-
-                            if (!currentChatId) return;
-
-                            const userMsg = messages.find(
-                              m => m.type === "user" && m.id === msg.id - 1
-                            );
-                            if (userMsg) {
-                              setMessages(prev =>
-                                prev.filter(m => m.id !== msg.id)
-                              );
-                              const currentTime = getFormattedTime();
-                              const startTime = Date.now();
-                              const loadingMessage = {
-                                id: msg.id,
-                                type: "assistant" as const,
-                                content: "",
-                                timestamp: currentTime,
-                                isLoading: true,
-                              };
-                              setMessages(prev => [...prev, loadingMessage]);
-                              setIsLoading(true);
-                              try {
-                                const response = await fetch("/api/chat", {
-                                  method: "POST",
-                                  headers: {
-                                    "Content-Type": "application/json",
-                                  },
-                                  body: JSON.stringify({
-                                    message: userMsg.content,
-                                  }),
-                                });
-                                if (!response.ok) {
-                                  throw new Error(
-                                    "Failed to get response from AI"
-                                  );
-                                }
-                                const data = await response.json();
-                                const endTime = Date.now();
-                                const responseTime = (
-                                  (endTime - startTime) /
-                                  1000
-                                ).toFixed(1);
-
-                                // Save regenerated AI response to database
-                                await addMessage({
-                                  chatId: currentChatId,
-                                  userId: user.id,
-                                  content: data.reply,
-                                  type: "assistant",
-                                });
-
-                                setMessages(prev =>
-                                  prev.map(m =>
-                                    m.isLoading && m.id === msg.id
-                                      ? {
-                                          ...m,
-                                          content: data.reply,
-                                          isLoading: false,
-                                          responseTime:
-                                            parseFloat(responseTime),
-                                        }
-                                      : m
-                                  )
-                                );
-                              } catch (error) {
-                                console.error(
-                                  "Error regenerating message:",
-                                  error
-                                );
-                                setMessages(prev =>
-                                  prev.map(m =>
-                                    m.isLoading && m.id === msg.id
-                                      ? {
-                                          ...m,
-                                          content:
-                                            "Sorry, I'm having trouble connecting. Please try again later.",
-                                          isLoading: false,
-                                        }
-                                      : m
-                                  )
-                                );
-                              } finally {
-                                setIsLoading(false);
-                              }
-                            }
-                          }}
-                        >
-                          <RotateCw className="w-3 h-3" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 hover:bg-accent"
-                          onClick={() => {
-                            setMessages(prev =>
-                              prev.filter(m => m.id !== msg.id)
-                            );
-                          }}
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
+                              }}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    {msg.type === "user" && (
+                      <div className="flex items-center justify-end gap-2 mt-2">
+                        <span className="text-xs text-muted-foreground">
+                          {msg.timestamp}
+                        </span>
+                        <span className="text-sm font-medium text-foreground">
+                          You
+                        </span>
                       </div>
-                    </div>
-                  )}
-                  {msg.type === "user" && (
-                    <div className="flex items-center justify-end gap-2 mt-2">
-                      <span className="text-xs text-muted-foreground">
-                        {msg.timestamp}
-                      </span>
-                      <span className="text-sm font-medium text-foreground">
-                        You
-                      </span>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
 
         {/* Input Area */}
         <Card className="p-4 bg-card border-border glass-card sticky bottom-4">

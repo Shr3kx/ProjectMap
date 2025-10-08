@@ -45,6 +45,126 @@ function generateChatName(message: string): string {
   return name || "New Chat";
 }
 
+// Enhanced function to generate smart chat titles from user question and AI response
+function generateSmartChatTitle(userMessage: string, aiResponse: string): string {
+  if (!userMessage || userMessage.trim() === "") return "New Chat";
+  
+  const userMsg = userMessage.trim();
+  const aiMsg = aiResponse.trim();
+  
+  // Define patterns for different types of conversations
+  const patterns = {
+    // Code-related conversations
+    code: /\b(code|function|class|method|algorithm|debug|error|fix|implement|create|build|javascript|python|react|html|css|sql|api|database|frontend|backend)\b/i,
+    // Project/planning conversations  
+    project: /\b(project|plan|roadmap|timeline|task|feature|requirement|design|architecture|app|website|system|platform|tool|dashboard)\b/i,
+    // Learning/explanation conversations
+    learning: /\b(how|what|why|explain|learn|understand|difference|between|tutorial|guide)\b/i,
+    // Problem-solving conversations
+    problem: /\b(problem|issue|solve|help|stuck|error|bug|troubleshoot|fix)\b/i,
+    // Analysis/comparison conversations
+    analysis: /\b(compare|versus|vs|difference|better|best|analyze|review|pros|cons)\b/i,
+  };
+  
+  // Extract key topics from both messages
+  const extractKeywords = (text: string): string[] => {
+    // Remove common words and extract meaningful terms
+    const commonWords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'can', 'this', 'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him', 'her', 'us', 'them']);
+    
+    return text.toLowerCase()
+      .replace(/[^\w\s]/g, ' ')
+      .split(/\s+/)
+      .filter(word => word.length > 2 && !commonWords.has(word))
+      .slice(0, 5);
+  };
+  
+  const userKeywords = extractKeywords(userMsg);
+  const aiKeywords = extractKeywords(aiMsg);
+  
+  // Combine and prioritize keywords
+  const allKeywords = [...new Set([...userKeywords, ...aiKeywords])];
+  
+  // Try to identify conversation type and generate appropriate title
+  let conversationType = '';
+  let typeKeywords: string[] = [];
+  
+  for (const [type, pattern] of Object.entries(patterns)) {
+    if (pattern.test(userMsg) || pattern.test(aiMsg)) {
+      conversationType = type;
+      typeKeywords = allKeywords.filter(keyword => pattern.test(keyword));
+      break;
+    }
+  }
+  
+  // Generate title based on conversation type
+  let title = '';
+  
+  if (userMsg.endsWith('?')) {
+    // For questions, extract the core question
+    const questionWords = userMsg.replace(/[?]/g, '').split(/\s+/);
+    if (questionWords.length <= 8) {
+      title = userMsg;
+    } else {
+      // Extract key part of the question
+      const keyPart = questionWords.slice(0, 6).join(' ');
+      title = keyPart + '?';
+    }
+  } else if (conversationType === 'code' && typeKeywords.length > 0) {
+    // Code-related: "Build React App" or "Fix JavaScript Error"
+    const codeKeywords = typeKeywords.slice(0, 3);
+    title = codeKeywords.map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  } else if (conversationType === 'project' && typeKeywords.length > 0) {
+    // Project-related: "Project Roadmap Planning" or "App Development Plan"
+    const projectKeywords = typeKeywords.slice(0, 3);
+    title = projectKeywords.map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  } else if (conversationType === 'learning') {
+    // Learning: "How to Learn React" or "Understanding APIs"
+    if (userMsg.toLowerCase().startsWith('how')) {
+      title = userMsg.split(/\s+/).slice(0, 6).join(' ');
+    } else {
+      const topKeywords = allKeywords.slice(0, 3);
+      title = 'Understanding ' + topKeywords.join(' ');
+    }
+  } else if (conversationType === 'problem') {
+    // Problem-solving: "Debugging React Issue" or "Solving Database Problem"
+    const problemKeywords = allKeywords.slice(0, 3);
+    title = 'Solving ' + problemKeywords.map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  } else if (conversationType === 'analysis') {
+    // Analysis: "React vs Vue Comparison" or "Database Analysis"
+    const analysisKeywords = allKeywords.slice(0, 3);
+    title = analysisKeywords.map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') + ' Analysis';
+  } else {
+    // Fallback: Use most important keywords
+    const topKeywords = allKeywords.slice(0, 4);
+    if (topKeywords.length > 0) {
+      title = topKeywords.map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+    } else {
+      // Ultimate fallback: first few words of user message
+      const words = userMsg.split(/\s+/);
+      title = words.slice(0, 5).join(' ');
+    }
+  }
+  
+  // Clean up and truncate title
+  title = title.replace(/\s+/g, ' ').trim();
+  
+  // Ensure title isn't too long
+  if (title.length > 50) {
+    title = title.substring(0, 47) + '...';
+  }
+  
+  // Ensure title isn't too short or generic
+  if (title.length < 3 || title.toLowerCase() === 'new chat') {
+    const fallbackWords = userMsg.split(/\s+/).slice(0, 4);
+    title = fallbackWords.join(' ');
+    if (title.length > 40) {
+      title = title.substring(0, 37) + '...';
+    }
+  }
+  
+  return title || "New Chat";
+}
+
 // Create a new chat
 export const createChat = mutation({
   args: {
@@ -103,7 +223,7 @@ export const addMessage = mutation({
       updatedAt: now,
     });
     
-    // If this is the first assistant response, update the chat title
+    // If this is the first assistant response, update the chat title using smart generation
     if (args.type === "assistant") {
       const messages = await ctx.db
         .query("messages")
@@ -113,11 +233,14 @@ export const addMessage = mutation({
       const assistantMessages = messages.filter(msg => msg.type === "assistant");
       
       if (assistantMessages.length === 1) {
-        // This is the first assistant response, update the title
-        const chat = await ctx.db.get(args.chatId);
-        if (chat) {
+        // This is the first assistant response, generate smart title from user question and AI response
+        const userMessages = messages.filter(msg => msg.type === "user");
+        const firstUserMessage = userMessages[0];
+        
+        if (firstUserMessage) {
+          const smartTitle = generateSmartChatTitle(firstUserMessage.content, args.content);
           await ctx.db.patch(args.chatId, {
-            title: generateChatName(args.content),
+            title: smartTitle,
           });
         }
       }

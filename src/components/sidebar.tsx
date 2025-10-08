@@ -73,7 +73,15 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useUser } from "@clerk/nextjs";
 
-export function AppSidebar({ children }: { children: React.ReactNode }) {
+export function AppSidebar({ 
+  children, 
+  onChatSelect,
+  onNewChat
+}: { 
+  children: React.ReactNode;
+  onChatSelect?: (chatId: string) => void;
+  onNewChat?: () => void;
+}) {
   const { user, isSignedIn, isLoaded } = useUser();
   const userId = user?.id;
 
@@ -142,27 +150,9 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
     }
   }, [isLoaded, isSignedIn, userId, folders, chats]);
 
-  const handleCreateChat = async () => {
-    setIsLoading(true);
-    try {
-      if (userId) {
-        // Create chat in Convex
-        const chatId = await createConvexChat({
-          userId,
-          initialMessage: "New conversation",
-          folderId: undefined,
-        });
-
-        // Convex will automatically update the queries
-      } else {
-        // Fallback to local state for unauthenticated users
-        setState(prev => createLocalChat(prev, "New Chat"));
-      }
-    } catch (error) {
-      console.error("Error creating chat:", error);
-    } finally {
-      setIsLoading(false);
-    }
+  const handleCreateChat = () => {
+    // Trigger new chat reset in the main chat component
+    onNewChat?.();
   };
 
   const handleCreateFolder = async () => {
@@ -413,7 +403,7 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
                 <SidebarMenu>
                   {pinnedChats.map(chat => (
                     <SidebarMenuItem key={chat.id}>
-                      <SidebarMenuButton>
+                      <SidebarMenuButton onClick={() => onChatSelect?.(chat.id)}>
                         <MessageSquare className="size-4" />
                         <span className="flex-1 truncate">{chat.title}</span>
                         <DropdownMenu>
@@ -520,7 +510,7 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
                           <div className="ml-4">
                             {folderChats.map(chat => (
                               <SidebarMenuItem key={chat.id}>
-                                <SidebarMenuButton className="pl-6">
+                                <SidebarMenuButton className="pl-6" onClick={() => onChatSelect?.(chat.id)}>
                                   <MessageSquare className="size-4" />
                                   <span className="flex-1 truncate">
                                     {chat.title}
@@ -580,7 +570,7 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
                 <SidebarMenu>
                   {chatsByDate.today.map(chat => (
                     <SidebarMenuItem key={chat.id}>
-                      <SidebarMenuButton>
+                      <SidebarMenuButton onClick={() => onChatSelect?.(chat.id)}>
                         <MessageSquare className="size-4" />
                         <span className="flex-1 truncate">{chat.title}</span>
                         <DropdownMenu>
@@ -637,7 +627,7 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
                 <SidebarMenu>
                   {chatsByDate.yesterday.map(chat => (
                     <SidebarMenuItem key={chat.id}>
-                      <SidebarMenuButton>
+                      <SidebarMenuButton onClick={() => onChatSelect?.(chat.id)}>
                         <MessageSquare className="size-4" />
                         <span className="flex-1 truncate">{chat.title}</span>
                         <DropdownMenu>
@@ -694,7 +684,7 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
                 <SidebarMenu>
                   {chatsByDate.lastWeek.map(chat => (
                     <SidebarMenuItem key={chat.id}>
-                      <SidebarMenuButton>
+                      <SidebarMenuButton onClick={() => onChatSelect?.(chat.id)}>
                         <MessageSquare className="size-4" />
                         <span className="flex-1 truncate">{chat.title}</span>
                         <DropdownMenu>
@@ -751,7 +741,7 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
                 <SidebarMenu>
                   {chatsByDate.older.map(chat => (
                     <SidebarMenuItem key={chat.id}>
-                      <SidebarMenuButton>
+                      <SidebarMenuButton onClick={() => onChatSelect?.(chat.id)}>
                         <MessageSquare className="size-4" />
                         <span className="flex-1 truncate">{chat.title}</span>
                         <DropdownMenu>
