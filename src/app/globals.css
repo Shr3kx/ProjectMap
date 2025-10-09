@@ -1,7 +1,4 @@
 @import "tailwindcss";
-@import "tw-animate-css";
-@import "highlight.js/styles/atom-one-light.css";
-@import "highlight.js/styles/atom-one-dark.css";
 
 :root {
   --background: oklch(1 0 0);
