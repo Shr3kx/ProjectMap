@@ -1,17 +1,9 @@
 "use client";
 
 import type React from "react";
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import {
-  Send,
-  Map,
-  Paperclip,
-  Copy,
-  RotateCw,
-  Trash2,
   Loader2,
   ArrowLeft,
 } from "lucide-react";
@@ -21,6 +13,8 @@ import { useUser } from "@clerk/nextjs";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import AppSidebar from "@/components/sidebar";
+import MessageList from "@/components/chatBot/MessageList";
+import ChatInput from "@/components/chatBot/ChatInput";
 
 function ChatConversationPage() {
   const { user, isSignedIn, isLoaded } = useUser();
@@ -29,7 +23,6 @@ function ChatConversationPage() {
   const params = useParams();
   const chatId = params.id as string;
 
-  const [message, setMessage] = useState("");
   const [localMessages, setLocalMessages] = useState<
     Array<{
       id: number;
@@ -41,8 +34,6 @@ function ChatConversationPage() {
     }>
   >([]);
 
-  const inputRef = useRef<HTMLInputElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   // Convex mutations
@@ -86,10 +77,9 @@ function ChatConversationPage() {
     setLocalMessages(formattedMessages);
   }, [isLoaded, chatMessages]);
 
-  const handleSendMessage = async () => {
-    if (!message.trim() || isLoading) return;
+  const handleSendMessage = useCallback(async (userMessage: string) => {
+    if (!userMessage.trim() || isLoading) return;
 
-    const userMessage = message;
     const currentTime = getFormattedTime();
     const startTime = Date.now();
     const newMessage = {
@@ -108,7 +98,6 @@ function ChatConversationPage() {
     };
 
     setLocalMessages(prev => [...prev, newMessage, loadingMessage]);
-    setMessage("");
     setIsLoading(true);
 
     try {
@@ -178,14 +167,16 @@ function ChatConversationPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [localMessages, isLoading, isSignedIn, userId, chatId, addConvexMessage]);
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
+  // Optimized message handlers
+  const handleCopy = useCallback((content: string) => {
+    navigator.clipboard.writeText(content);
+  }, []);
+
+  const handleDelete = useCallback((messageId: number) => {
+    setLocalMessages(prev => prev.filter(m => m.id !== messageId));
+  }, []);
 
   if (!isLoaded) {
     return (
@@ -225,7 +216,9 @@ function ChatConversationPage() {
               </Button>
             </Link>
             <div>
-              <h1 className="text-xl font-semibold">{chatData?.title || "Chat"}</h1>
+              <h1 className="text-xl font-semibold">
+                {chatData?.title || "Chat"}
+              </h1>
               <p className="text-sm text-muted-foreground">
                 {chatMessages?.length || 0} messages
               </p>
@@ -239,160 +232,20 @@ function ChatConversationPage() {
             </div>
           )}
 
-          {/* Chat Messages */}
-          <div className="space-y-6 mb-8">
-            {localMessages.map((msg, index) => (
-              <div
-                key={msg.id}
-                className={`flex ${
-                  msg.type === "user" ? "justify-end" : "justify-start"
-                }`}
-              >
-                <div
-                  className={`${
-                    msg.type === "user" ? "max-w-[80%]" : "w-full max-w-2xl"
-                  } ${
-                    msg.type === "user" ? "order-2" : "order-1"
-                  } flex flex-col`}
-                >
-                  {msg.type === "assistant" && (
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                        <Map className="w-3 h-3 text-primary-foreground" />
-                      </div>
-                      <span className="text-sm font-medium text-foreground">
-                        ProjectMap AI
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {msg.timestamp}
-                      </span>
-                    </div>
-                  )}
-                  <Card
-                    className={`p-4 rounded-2xl ${
-                      msg.type === "user"
-                        ? "bg-primary text-primary-foreground ml-4"
-                        : `bg-card response-card`
-                    }`}
-                  >
-                    {msg.isLoading ? (
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin"></div>
-                        <span>ProjectMap is thinking...</span>
-                      </div>
-                    ) : (
-                      <p
-                        className={`text-sm leading-relaxed ${
-                          msg.type === "user"
-                            ? "text-primary-foreground"
-                            : "text-foreground"
-                        }`}
-                      >
-                        {msg.content}
-                      </p>
-                    )}
-                  </Card>
-                  {msg.type === "assistant" && !msg.isLoading && (
-                    <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
-                      <div className="flex items-center gap-2">
-                        <span>ProjectMap</span>
-                        <span>•</span>
-                        <span>Responded in {msg.responseTime || 0}s</span>
-                        <span>•</span>
-                        <span>{msg.timestamp}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 hover:bg-accent"
-                          onClick={() => {
-                            navigator.clipboard.writeText(msg.content);
-                          }}
-                        >
-                          <Copy className="w-3 h-3" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 hover:bg-accent"
-                          onClick={() => {
-                            setLocalMessages(prev =>
-                              prev.filter(m => m.id !== msg.id)
-                            );
-                          }}
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                  {msg.type === "user" && (
-                    <div className="flex items-center justify-end gap-2 mt-2">
-                      <span className="text-xs text-muted-foreground">
-                        {msg.timestamp}
-                      </span>
-                      <span className="text-sm font-medium text-foreground">
-                        You
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+          {/* Optimized Message List */}
+          <MessageList
+            messages={localMessages}
+            isLoadingChat={false}
+            onCopy={handleCopy}
+            onDelete={handleDelete}
+          />
 
-          {/* Input Area */}
-          <Card className="p-4 bg-card border-border glass-card sticky bottom-4">
-            <div className="flex gap-3">
-              <input
-                ref={fileInputRef}
-                type="file"
-                className="hidden"
-                onChange={e => {
-                  console.log("File selected:", e.target.files?.[0]?.name);
-                }}
-              />
-              <Button
-                variant="outline"
-                size="icon"
-                className="shrink-0 bg-transparent"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <Paperclip className="w-4 h-4" />
-              </Button>
-              <div className="flex-1">
-                <Input
-                  ref={inputRef}
-                  placeholder="Continue the conversation..."
-                  value={message}
-                  onChange={e => setMessage(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  className="border-input bg-background text-foreground placeholder:text-muted-foreground"
-                />
-              </div>
-              <Button
-                onClick={handleSendMessage}
-                disabled={!message.trim() || isLoading}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground"
-              >
-                {isLoading ? (
-                  <div className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin" />
-                ) : (
-                  <Send className="w-4 h-4" />
-                )}
-              </Button>
-            </div>
-            <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
-              <p className="text-xs text-muted-foreground">
-                Press Enter to send, Shift + Enter for new line
-              </p>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-                {isLoading ? "AI is typing..." : "AI Assistant Ready"}
-              </div>
-            </div>
-          </Card>
+          {/* Optimized Chat Input */}
+          <ChatInput
+            onSendMessage={handleSendMessage}
+            isLoading={isLoading}
+            placeholder="Continue the conversation..."
+          />
         </div>
       </div>
     </AppSidebar>

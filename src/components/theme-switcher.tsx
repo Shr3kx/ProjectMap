@@ -17,7 +17,7 @@ import {
   type ThemePreset,
   type ThemeTokenName,
 } from "@/lib/themes";
-import { PaintbrushVertical } from "lucide-react";
+import { Palette } from "lucide-react";
 
 const STORAGE_KEY = "theme:preset-id";
 
@@ -87,7 +87,7 @@ export function ThemeSwitcher() {
                 : "Theme switcher"
             }
           >
-            <PaintbrushVertical className="size-4" aria-hidden="true" />
+            <Palette className="size-4" aria-hidden="true" />
             <span className="sr-only">
               {mounted ? `Theme: ${currentPreset.name}` : "Theme switcher"}
             </span>

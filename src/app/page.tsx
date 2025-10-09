@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import ThemeSwitcher from "@/components/theme-switcher";
 import { AppSidebar } from "@/components/sidebar";
 import ChatPage from "@/components/chatBot/page";
 
