@@ -1,18 +1,13 @@
 "use client";
 
-import type React from "react";
+import React from "react";
 import { useState, useEffect, useCallback } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
-import {
-  FolderKanban,
-  Map,
-  Users,
-  Zap,
-} from "lucide-react";
+import { FolderKanban, Map, Users, Zap } from "lucide-react";
 import MessageList from "./MessageList";
 import ChatInput from "./ChatInput";
 
@@ -126,124 +121,153 @@ export default function ChatPage({
   }, [currentChatMessages, currentChatId]);
 
   // Optimized message sending function
-  const handleSendMessage = useCallback(async (userMessage: string) => {
-    if (!userMessage.trim() || isLoading) return;
+  const handleSendMessage = useCallback(
+    async (userMessage: string) => {
+      if (!userMessage.trim() || isLoading) return;
 
-    const currentTime = getFormattedTime();
-    const startTime = Date.now();
-    const newMessage: Message = {
-      id: messages.length + 1,
-      type: "user",
-      content: userMessage,
-      timestamp: currentTime,
-    };
+      const currentTime = getFormattedTime();
+      const startTime = Date.now();
+      const newMessage: Message = {
+        id: messages.length + 1,
+        type: "user",
+        content: userMessage,
+        timestamp: currentTime,
+      };
 
-    const loadingMessage: Message = {
-      id: messages.length + 2,
-      type: "assistant",
-      content: "",
-      timestamp: currentTime,
-      isLoading: true,
-    };
+      const loadingMessage: Message = {
+        id: messages.length + 2,
+        type: "assistant",
+        content: "",
+        timestamp: currentTime,
+        isLoading: true,
+      };
 
-    setMessages(prev => [...prev, newMessage, loadingMessage]);
-    setIsLoading(true);
+      // Add both user message and loading assistant message
+      setMessages(prev => [...prev, newMessage, loadingMessage]);
+      setIsLoading(true);
 
-    try {
-      let chatId = currentChatId;
+      try {
+        let chatId = currentChatId;
 
-      // Only save to database if user is authenticated
-      if (user) {
-        // Create a new chat if this is the first message
-        if (!isChatCreated && !currentChatId) {
-          chatId = await createChat({
-            userId: user.id,
-            initialMessage: userMessage,
-          });
-          setCurrentChatId(chatId);
-          setIsChatCreated(true);
-        } else if (chatId) {
-          // Add user message to existing chat
+        // Only save to database if user is authenticated
+        if (user) {
+          // Create a new chat if this is the first message
+          if (!isChatCreated && !currentChatId) {
+            chatId = await createChat({
+              userId: user.id,
+              initialMessage: userMessage,
+            });
+            setCurrentChatId(chatId);
+            setIsChatCreated(true);
+          } else if (chatId) {
+            // Add user message to existing chat
+            await addMessage({
+              chatId,
+              userId: user.id,
+              content: userMessage,
+              type: "user",
+            });
+          }
+        }
+
+        // Make API call and wait for complete response
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ message: userMessage }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`API request failed with status ${response.status}`);
+        }
+
+        // Wait for complete response data
+        const data = await response.json();
+        
+        // Validate response structure
+        if (!data.reply) {
+          throw new Error("Invalid response: missing reply content");
+        }
+
+        const endTime = Date.now();
+        const responseTime = ((endTime - startTime) / 1000).toFixed(1);
+
+        // Save AI response to database only if user is authenticated
+        if (user && chatId) {
           await addMessage({
             chatId,
             userId: user.id,
-            content: userMessage,
-            type: "user",
+            content: data.reply,
+            type: "assistant",
           });
         }
+
+        // Only update the loading message after we have the complete response
+        setMessages(prev =>
+          prev.map(msg =>
+            msg.isLoading && msg.id === loadingMessage.id
+              ? {
+                  ...msg,
+                  content: data.reply,
+                  isLoading: false,
+                  responseTime: parseFloat(responseTime),
+                }
+              : msg
+          )
+        );
+      } catch (error) {
+        console.error("Error sending message:", error);
+        
+        // Update loading message with error content
+        setMessages(prev =>
+          prev.map(msg =>
+            msg.isLoading && msg.id === loadingMessage.id
+              ? {
+                  ...msg,
+                  content:
+                    "Sorry, I'm having trouble connecting. Please try again later.",
+                  isLoading: false,
+                }
+              : msg
+          )
+        );
+      } finally {
+        // Always clear the global loading state
+        setIsLoading(false);
       }
-
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ message: userMessage }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to get response from AI");
-      }
-
-      const data = await response.json();
-      const endTime = Date.now();
-      const responseTime = ((endTime - startTime) / 1000).toFixed(1);
-
-      // Save AI response to database only if user is authenticated
-      if (user && chatId) {
-        await addMessage({
-          chatId,
-          userId: user.id,
-          content: data.reply,
-          type: "assistant",
-        });
-      }
-
-      setMessages(prev =>
-        prev.map(msg =>
-          msg.isLoading
-            ? {
-                ...msg,
-                content: data.reply,
-                isLoading: false,
-                responseTime: parseFloat(responseTime),
-              }
-            : msg
-        )
-      );
-    } catch (error) {
-      console.error("Error sending message:", error);
-      setMessages(prev =>
-        prev.map(msg =>
-          msg.isLoading
-            ? {
-                ...msg,
-                content:
-                  "Sorry, I'm having trouble connecting. Please try again later.",
-                isLoading: false,
-              }
-            : msg
-        )
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  }, [messages, isLoading, user, currentChatId, isChatCreated, createChat, addMessage]);
+    },
+    [
+      messages,
+      isLoading,
+      user,
+      currentChatId,
+      isChatCreated,
+      createChat,
+      addMessage,
+    ]
+  );
 
   // Optimized message handlers
   const handleCopy = useCallback((content: string) => {
     navigator.clipboard.writeText(content);
   }, []);
 
-  const handleRegenerate = useCallback(async (messageId: number) => {
-    // Find the user message that preceded this assistant message
-    const userMsg = messages.find(m => m.type === "user" && m.id === messageId - 1);
-    if (userMsg) {
-      // Remove the assistant message and regenerate
-      setMessages(prev => prev.filter(m => m.id !== messageId));
-      await handleSendMessage(userMsg.content);
-    }
-  }, [messages, handleSendMessage]);
+  const handleRegenerate = useCallback(
+    async (messageId: number) => {
+      // Find the user message that preceded this assistant message
+      const userMsg = messages.find(
+        m => m.type === "user" && m.id === messageId - 1
+      );
+      if (userMsg) {
+        // Remove the assistant message and regenerate
+        setMessages(prev => prev.filter(m => m.id !== messageId));
+        await handleSendMessage(userMsg.content);
+      }
+    },
+    [messages, handleSendMessage]
+  );
 
   const handleDelete = useCallback((messageId: number) => {
     setMessages(prev => prev.filter(m => m.id !== messageId));
@@ -273,7 +297,7 @@ export default function ChatPage({
   ];
 
   return (
-    <div className="min-h-screen bg-background overflow-y-auto">
+    <div className="min-h-screen bg-transparent overflow-y-auto">
       <div className="container mx-auto px-4 py-2 max-w-4xl">
         {/* Welcome Section */}
         <div className="text-center mb-8">

@@ -79,8 +79,9 @@ export function ThemeSwitcher() {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
-            variant="default"
-            className="skeuomorphic-button cursor-pointer"
+            variant="ghost"
+            size="icon"
+            className="size-8"
             aria-label={
               mounted
                 ? `Current theme: ${currentPreset.name}`

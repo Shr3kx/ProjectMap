@@ -71,13 +71,13 @@ import {
 
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { useUser } from "@clerk/nextjs";
+import { useUser, SignInButton, UserButton } from "@clerk/nextjs";
 
-export function AppSidebar({ 
-  children, 
+export function AppSidebar({
+  children,
   onChatSelect,
-  onNewChat
-}: { 
+  onNewChat,
+}: {
   children: React.ReactNode;
   onChatSelect?: (chatId: string) => void;
   onNewChat?: () => void;
@@ -403,7 +403,9 @@ export function AppSidebar({
                 <SidebarMenu>
                   {pinnedChats.map(chat => (
                     <SidebarMenuItem key={chat.id}>
-                      <SidebarMenuButton onClick={() => onChatSelect?.(chat.id)}>
+                      <SidebarMenuButton
+                        onClick={() => onChatSelect?.(chat.id)}
+                      >
                         <MessageSquare className="size-4" />
                         <span className="flex-1 truncate">{chat.title}</span>
                         <DropdownMenu>
@@ -510,7 +512,10 @@ export function AppSidebar({
                           <div className="ml-4">
                             {folderChats.map(chat => (
                               <SidebarMenuItem key={chat.id}>
-                                <SidebarMenuButton className="pl-6" onClick={() => onChatSelect?.(chat.id)}>
+                                <SidebarMenuButton
+                                  className="pl-6"
+                                  onClick={() => onChatSelect?.(chat.id)}
+                                >
                                   <MessageSquare className="size-4" />
                                   <span className="flex-1 truncate">
                                     {chat.title}
@@ -570,7 +575,9 @@ export function AppSidebar({
                 <SidebarMenu>
                   {chatsByDate.today.map(chat => (
                     <SidebarMenuItem key={chat.id}>
-                      <SidebarMenuButton onClick={() => onChatSelect?.(chat.id)}>
+                      <SidebarMenuButton
+                        onClick={() => onChatSelect?.(chat.id)}
+                      >
                         <MessageSquare className="size-4" />
                         <span className="flex-1 truncate">{chat.title}</span>
                         <DropdownMenu>
@@ -627,7 +634,9 @@ export function AppSidebar({
                 <SidebarMenu>
                   {chatsByDate.yesterday.map(chat => (
                     <SidebarMenuItem key={chat.id}>
-                      <SidebarMenuButton onClick={() => onChatSelect?.(chat.id)}>
+                      <SidebarMenuButton
+                        onClick={() => onChatSelect?.(chat.id)}
+                      >
                         <MessageSquare className="size-4" />
                         <span className="flex-1 truncate">{chat.title}</span>
                         <DropdownMenu>
@@ -684,7 +693,9 @@ export function AppSidebar({
                 <SidebarMenu>
                   {chatsByDate.lastWeek.map(chat => (
                     <SidebarMenuItem key={chat.id}>
-                      <SidebarMenuButton onClick={() => onChatSelect?.(chat.id)}>
+                      <SidebarMenuButton
+                        onClick={() => onChatSelect?.(chat.id)}
+                      >
                         <MessageSquare className="size-4" />
                         <span className="flex-1 truncate">{chat.title}</span>
                         <DropdownMenu>
@@ -741,7 +752,9 @@ export function AppSidebar({
                 <SidebarMenu>
                   {chatsByDate.older.map(chat => (
                     <SidebarMenuItem key={chat.id}>
-                      <SidebarMenuButton onClick={() => onChatSelect?.(chat.id)}>
+                      <SidebarMenuButton
+                        onClick={() => onChatSelect?.(chat.id)}
+                      >
                         <MessageSquare className="size-4" />
                         <span className="flex-1 truncate">{chat.title}</span>
                         <DropdownMenu>
@@ -794,6 +807,22 @@ export function AppSidebar({
 
         <SidebarFooter>
           <Separator className="mx-2" />
+
+          {/* Login/User Button */}
+          <div className="px-2 py-2 cursor-pointer">
+            {isSignedIn ? (
+              <div className="flex items-center justify-center">
+                <UserButton afterSignOutUrl="/" />
+              </div>
+            ) : (
+              <SignInButton mode="modal">
+                <Button variant="ghost" size="sm" className="w-full">
+                  <span className="cursor-pointer">Log in</span>
+                </Button>
+              </SignInButton>
+            )}
+          </div>
+
           <div className="text-muted-foreground px-2 py-2 text-center text-xs">
             Ask ProjectMap, Know More.
           </div>
