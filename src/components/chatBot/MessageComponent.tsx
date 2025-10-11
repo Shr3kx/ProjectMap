@@ -98,12 +98,7 @@ const MessageComponent = memo(
           )}
 
           <Card className={cardClassName}>
-            {message.isLoading ? (
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin"></div>
-                <span>ProjectMap is thinking...</span>
-              </div>
-            ) : message.type === "assistant" ? (
+            {message.type === "assistant" ? (
               <MarkdownRenderer content={message.content} />
             ) : (
               <p className="text-sm leading-relaxed text-primary-foreground">
@@ -112,7 +107,7 @@ const MessageComponent = memo(
             )}
           </Card>
 
-          {message.type === "assistant" && !message.isLoading && !isWelcome && (
+          {message.type === "assistant" && !isWelcome && (
             <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
               <div className="flex items-center gap-2">
                 <span>ProjectMap</span>

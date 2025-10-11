@@ -58,7 +58,7 @@ const ChatInput = memo(
     );
 
     return (
-      <Card className="p-4 bg-card border-border glass-card sticky bottom-4">
+      <Card className="p-4 bg-card border-border border-sm glass-card sticky bottom-4">
         <div className="flex gap-3">
           <input
             ref={fileInputRef}

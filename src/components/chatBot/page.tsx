@@ -35,6 +35,7 @@ export default function ChatPage({
   const [isChatCreated, setIsChatCreated] = useState(false);
   const [isLoadingChat, setIsLoadingChat] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isAiThinking, setIsAiThinking] = useState(false);
 
   // Query to load messages for the current chat
   const currentChatMessages = useQuery(
@@ -127,24 +128,20 @@ export default function ChatPage({
 
       const currentTime = getFormattedTime();
       const startTime = Date.now();
+      
+      // Generate unique IDs to avoid conflicts with existing messages
+      const maxId = Math.max(0, ...messages.map(m => m.id));
       const newMessage: Message = {
-        id: messages.length + 1,
+        id: maxId + 1,
         type: "user",
         content: userMessage,
         timestamp: currentTime,
       };
 
-      const loadingMessage: Message = {
-        id: messages.length + 2,
-        type: "assistant",
-        content: "",
-        timestamp: currentTime,
-        isLoading: true,
-      };
-
-      // Add both user message and loading assistant message
-      setMessages(prev => [...prev, newMessage, loadingMessage]);
+      // Add user message and start AI thinking
+      setMessages(prev => [...prev, newMessage]);
       setIsLoading(true);
+      setIsAiThinking(true);
 
       try {
         let chatId = currentChatId;
@@ -170,25 +167,39 @@ export default function ChatPage({
           }
         }
 
-        // Make API call and wait for complete response
+        // Prepare conversation history for API call
+        const conversationHistory = messages
+          .filter(msg => !msg.isLoading && msg.content.trim() !== "") // Exclude loading and empty messages
+          .map(msg => ({
+            role: msg.type === "user" ? "user" : "assistant",
+            content: msg.content
+          }));
+
+        // Add the new user message to the history
+        const fullConversation = [
+          ...conversationHistory,
+          { role: "user", content: userMessage }
+        ];
+
+        // Make API call with full conversation history
         const response = await fetch("/api/chat", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ message: userMessage }),
+          body: JSON.stringify({ messages: fullConversation }),
         });
 
         if (!response.ok) {
           throw new Error(`API request failed with status ${response.status}`);
         }
 
-        // Wait for complete response data
+        // Wait for complete response data - this ensures we have the full response
         const data = await response.json();
         
         // Validate response structure
-        if (!data.reply) {
-          throw new Error("Invalid response: missing reply content");
+        if (!data.reply || typeof data.reply !== 'string') {
+          throw new Error("Invalid response: missing or invalid reply content");
         }
 
         const endTime = Date.now();
@@ -204,37 +215,40 @@ export default function ChatPage({
           });
         }
 
-        // Only update the loading message after we have the complete response
-        setMessages(prev =>
-          prev.map(msg =>
-            msg.isLoading && msg.id === loadingMessage.id
-              ? {
-                  ...msg,
-                  content: data.reply,
-                  isLoading: false,
-                  responseTime: parseFloat(responseTime),
-                }
-              : msg
-          )
-        );
+        // Add the assistant response message
+        const assistantMessage: Message = {
+          id: maxId + 2,
+          type: "assistant",
+          content: data.reply,
+          timestamp: currentTime,
+          responseTime: parseFloat(responseTime),
+        };
+
+        setMessages(prev => [...prev, assistantMessage]);
+
+        // Stop AI thinking and small delay to ensure state update completes
+        setIsAiThinking(false);
+        await new Promise(resolve => setTimeout(resolve, 50));
+        
       } catch (error) {
         console.error("Error sending message:", error);
         
-        // Update loading message with error content
-        setMessages(prev =>
-          prev.map(msg =>
-            msg.isLoading && msg.id === loadingMessage.id
-              ? {
-                  ...msg,
-                  content:
-                    "Sorry, I'm having trouble connecting. Please try again later.",
-                  isLoading: false,
-                }
-              : msg
-          )
-        );
+        // Add error message and stop AI thinking
+        const errorMessage: Message = {
+          id: maxId + 2,
+          type: "assistant",
+          content: "Sorry, I'm having trouble connecting. Please try again later.",
+          timestamp: currentTime,
+        };
+
+        setMessages(prev => [...prev, errorMessage]);
+        setIsAiThinking(false);
+
+        // Small delay for error case as well
+        await new Promise(resolve => setTimeout(resolve, 50));
+        
       } finally {
-        // Always clear the global loading state
+        // Clear the global loading state only after message state is updated
         setIsLoading(false);
       }
     },
@@ -261,7 +275,7 @@ export default function ChatPage({
         m => m.type === "user" && m.id === messageId - 1
       );
       if (userMsg) {
-        // Remove the assistant message and regenerate
+        // Remove the assistant message and regenerate with full context
         setMessages(prev => prev.filter(m => m.id !== messageId));
         await handleSendMessage(userMsg.content);
       }
@@ -350,6 +364,7 @@ export default function ChatPage({
         <MessageList
           messages={messages}
           isLoadingChat={isLoadingChat}
+          isAiThinking={isAiThinking}
           onCopy={handleCopy}
           onRegenerate={handleRegenerate}
           onDelete={handleDelete}
