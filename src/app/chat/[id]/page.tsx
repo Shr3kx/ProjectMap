@@ -34,10 +34,8 @@ function ChatConversationPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isAiThinking, setIsAiThinking] = useState(false);
 
-  // Convex mutations
   const addConvexMessage = useMutation(api.chats.addMessage);
 
-  // Convex queries
   const chatData = useQuery(
     api.chats.getChat,
     chatId ? { chatId: chatId as any } : "skip"
@@ -57,7 +55,6 @@ function ChatConversationPage() {
     });
   };
 
-  // Load existing chat messages
   useEffect(() => {
     if (!isLoaded || !chatMessages) return;
 
@@ -88,13 +85,13 @@ function ChatConversationPage() {
         timestamp: currentTime,
       };
 
-      // Add user message and start AI thinking
+      // Add user message and start AI thinking indicator
       setLocalMessages(prev => [...prev, newMessage]);
       setIsLoading(true);
       setIsAiThinking(true);
 
       try {
-        // Save message to Convex
+        // Save user message to database
         if (isSignedIn && userId && chatId) {
           await addConvexMessage({
             chatId: chatId as any,
@@ -104,21 +101,26 @@ function ChatConversationPage() {
           });
         }
 
-        // Prepare conversation history for API call
+        /**
+         * Prepare conversation history for AI SDK
+         * Filters out loading/empty messages and formats for API
+         */
         const conversationHistory = localMessages
-          .filter(msg => !msg.isLoading && msg.content.trim() !== "") // Exclude loading and empty messages
+          .filter(msg => !msg.isLoading && msg.content.trim() !== "")
           .map(msg => ({
             role: msg.type === "user" ? "user" : "assistant",
-            content: msg.content
+            content: msg.content,
           }));
 
-        // Add the new user message to the history
         const fullConversation = [
           ...conversationHistory,
-          { role: "user", content: userMessage }
+          { role: "user", content: userMessage },
         ];
 
-        // Make API call with full conversation history
+        /**
+         * Stream response from AI SDK endpoint
+         * The API uses Vercel AI SDK's streamText for efficient streaming
+         */
         const response = await fetch("/api/chat", {
           method: "POST",
           headers: {
@@ -131,66 +133,73 @@ function ChatConversationPage() {
           throw new Error(`API request failed with status ${response.status}`);
         }
 
-        // Wait for complete response data - this ensures we have the full response
-        const data = await response.json();
-        
-        // Validate response structure
-        if (!data.reply || typeof data.reply !== 'string') {
-          throw new Error("Invalid response: missing or invalid reply content");
+        /**
+         * Handle streaming response
+         * Process the text stream in real-time
+         */
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+        let assistantContent = "";
+
+        if (reader) {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value, { stream: true });
+            assistantContent += chunk;
+          }
         }
 
         const endTime = Date.now();
         const responseTime = ((endTime - startTime) / 1000).toFixed(1);
 
-        // Save AI response to Convex
+        // Stop AI thinking indicator
+        setIsAiThinking(false);
+
+        // Save AI response to database
         if (isSignedIn && userId && chatId) {
           await addConvexMessage({
             chatId: chatId as any,
             userId: userId,
-            content: data.reply,
+            content: assistantContent,
             type: "assistant",
           });
         }
 
-        // Add the assistant response message
+        // Add the complete assistant response to messages
         const assistantMessage = {
           id: localMessages.length + 2,
           type: "assistant" as const,
-          content: data.reply,
+          content: assistantContent,
           timestamp: currentTime,
           responseTime: parseFloat(responseTime),
         };
 
         setLocalMessages(prev => [...prev, assistantMessage]);
-
-        // Stop AI thinking and small delay to ensure state update completes
-        setIsAiThinking(false);
         await new Promise(resolve => setTimeout(resolve, 50));
-        
       } catch (error) {
         console.error("Error sending message:", error);
-        
-        // Add error message and stop AI thinking
+
+        // Show error message to user
         const errorMessage = {
           id: localMessages.length + 2,
           type: "assistant" as const,
-          content: "Sorry, I'm having trouble connecting. Please try again later.",
+          content:
+            "Sorry, I'm having trouble connecting. Please try again later.",
           timestamp: currentTime,
         };
 
         setLocalMessages(prev => [...prev, errorMessage]);
         setIsAiThinking(false);
-
-        // Small delay for error case as well
         await new Promise(resolve => setTimeout(resolve, 50));
-        
       } finally {
-        // Clear the global loading state only after message state is updated
         setIsLoading(false);
       }
-    }, [localMessages, isLoading, isSignedIn, userId, chatId, addConvexMessage]);
+    },
+    [localMessages, isLoading, isSignedIn, userId, chatId, addConvexMessage]
+  );
 
-  // Optimized message handlers
   const handleCopy = useCallback((content: string) => {
     navigator.clipboard.writeText(content);
   }, []);

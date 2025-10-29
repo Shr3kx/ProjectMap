@@ -816,7 +816,11 @@ export function AppSidebar({
               </div>
             ) : (
               <SignInButton mode="modal">
-                <Button variant="ghost" size="sm" className="w-full">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full skeuomorphic-button"
+                >
                   <span className="cursor-pointer">Log in</span>
                 </Button>
               </SignInButton>
@@ -831,7 +835,7 @@ export function AppSidebar({
 
       {/* Main content area */}
       <SidebarInset>
-        <AppHeader />
+        {/* <AppHeader /> */}
         {children}
       </SidebarInset>
 

@@ -30,7 +30,6 @@ const MessageList = memo(
     onRegenerate,
     onDelete,
   }: MessageListProps) => {
-    // Memoize the rendered messages to prevent re-rendering when parent re-renders
     const renderedMessages = useMemo(() => {
       return messages.map((message, index) => {
         const isWelcome = index === 0 && message.type === "assistant";

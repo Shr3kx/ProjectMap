@@ -49,7 +49,6 @@ const MessageComponent = memo(
       }
     }, [message.id, onDelete]);
 
-    // Memoize style calculations
     const containerClassName = React.useMemo(
       () =>
         `flex ${

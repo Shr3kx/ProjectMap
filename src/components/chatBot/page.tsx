@@ -37,7 +37,6 @@ export default function ChatPage({
   const [isLoading, setIsLoading] = useState(false);
   const [isAiThinking, setIsAiThinking] = useState(false);
 
-  // Query to load messages for the current chat
   const currentChatMessages = useQuery(
     api.chats.getChatMessages,
     currentChatId ? { chatId: currentChatId } : "skip"
@@ -66,7 +65,6 @@ export default function ChatPage({
     },
   ]);
 
-  // Handle chat selection from sidebar
   useEffect(() => {
     if (selectedChatId && selectedChatId !== currentChatId) {
       setCurrentChatId(selectedChatId as Id<"chats">);
@@ -75,14 +73,11 @@ export default function ChatPage({
     }
   }, [selectedChatId, currentChatId]);
 
-  // Handle new chat reset
   useEffect(() => {
     if (isNewChat) {
-      // Reset all chat state to start fresh
       setCurrentChatId(null);
       setIsChatCreated(false);
       setIsLoadingChat(false);
-      // Reset to welcome message
       setMessages([
         {
           id: 1,
@@ -95,7 +90,6 @@ export default function ChatPage({
     }
   }, [isNewChat]);
 
-  // Load messages when a chat is selected
   useEffect(() => {
     if (currentChatMessages && currentChatMessages.length > 0) {
       const formattedMessages = currentChatMessages.map((msg, index) => ({
@@ -115,21 +109,18 @@ export default function ChatPage({
       currentChatMessages &&
       currentChatMessages.length === 0
     ) {
-      // Chat exists but has no messages, show empty state
       setMessages([]);
       setIsLoadingChat(false);
     }
   }, [currentChatMessages, currentChatId]);
 
-  // Optimized message sending function
   const handleSendMessage = useCallback(
     async (userMessage: string) => {
       if (!userMessage.trim() || isLoading) return;
 
       const currentTime = getFormattedTime();
       const startTime = Date.now();
-      
-      // Generate unique IDs to avoid conflicts with existing messages
+
       const maxId = Math.max(0, ...messages.map(m => m.id));
       const newMessage: Message = {
         id: maxId + 1,
@@ -138,7 +129,6 @@ export default function ChatPage({
         timestamp: currentTime,
       };
 
-      // Add user message and start AI thinking
       setMessages(prev => [...prev, newMessage]);
       setIsLoading(true);
       setIsAiThinking(true);
@@ -146,9 +136,7 @@ export default function ChatPage({
       try {
         let chatId = currentChatId;
 
-        // Only save to database if user is authenticated
         if (user) {
-          // Create a new chat if this is the first message
           if (!isChatCreated && !currentChatId) {
             chatId = await createChat({
               userId: user.id,
@@ -157,7 +145,6 @@ export default function ChatPage({
             setCurrentChatId(chatId);
             setIsChatCreated(true);
           } else if (chatId) {
-            // Add user message to existing chat
             await addMessage({
               chatId,
               userId: user.id,
@@ -167,21 +154,18 @@ export default function ChatPage({
           }
         }
 
-        // Prepare conversation history for API call
         const conversationHistory = messages
-          .filter(msg => !msg.isLoading && msg.content.trim() !== "") // Exclude loading and empty messages
+          .filter(msg => !msg.isLoading && msg.content.trim() !== "")
           .map(msg => ({
             role: msg.type === "user" ? "user" : "assistant",
-            content: msg.content
+            content: msg.content,
           }));
 
-        // Add the new user message to the history
         const fullConversation = [
           ...conversationHistory,
-          { role: "user", content: userMessage }
+          { role: "user", content: userMessage },
         ];
 
-        // Make API call with full conversation history
         const response = await fetch("/api/chat", {
           method: "POST",
           headers: {
@@ -194,61 +178,59 @@ export default function ChatPage({
           throw new Error(`API request failed with status ${response.status}`);
         }
 
-        // Wait for complete response data - this ensures we have the full response
-        const data = await response.json();
-        
-        // Validate response structure
-        if (!data.reply || typeof data.reply !== 'string') {
-          throw new Error("Invalid response: missing or invalid reply content");
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+        let assistantContent = "";
+
+        if (reader) {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value, { stream: true });
+            assistantContent += chunk;
+          }
         }
 
         const endTime = Date.now();
         const responseTime = ((endTime - startTime) / 1000).toFixed(1);
 
-        // Save AI response to database only if user is authenticated
+        setIsAiThinking(false);
+
         if (user && chatId) {
           await addMessage({
             chatId,
             userId: user.id,
-            content: data.reply,
+            content: assistantContent,
             type: "assistant",
           });
         }
 
-        // Add the assistant response message
         const assistantMessage: Message = {
           id: maxId + 2,
           type: "assistant",
-          content: data.reply,
+          content: assistantContent,
           timestamp: currentTime,
           responseTime: parseFloat(responseTime),
         };
 
         setMessages(prev => [...prev, assistantMessage]);
-
-        // Stop AI thinking and small delay to ensure state update completes
-        setIsAiThinking(false);
         await new Promise(resolve => setTimeout(resolve, 50));
-        
       } catch (error) {
         console.error("Error sending message:", error);
-        
-        // Add error message and stop AI thinking
+
         const errorMessage: Message = {
           id: maxId + 2,
           type: "assistant",
-          content: "Sorry, I'm having trouble connecting. Please try again later.",
+          content:
+            "Sorry, I'm having trouble connecting. Please try again later.",
           timestamp: currentTime,
         };
 
         setMessages(prev => [...prev, errorMessage]);
         setIsAiThinking(false);
-
-        // Small delay for error case as well
         await new Promise(resolve => setTimeout(resolve, 50));
-        
       } finally {
-        // Clear the global loading state only after message state is updated
         setIsLoading(false);
       }
     },
@@ -263,19 +245,16 @@ export default function ChatPage({
     ]
   );
 
-  // Optimized message handlers
   const handleCopy = useCallback((content: string) => {
     navigator.clipboard.writeText(content);
   }, []);
 
   const handleRegenerate = useCallback(
     async (messageId: number) => {
-      // Find the user message that preceded this assistant message
       const userMsg = messages.find(
         m => m.type === "user" && m.id === messageId - 1
       );
       if (userMsg) {
-        // Remove the assistant message and regenerate with full context
         setMessages(prev => prev.filter(m => m.id !== messageId));
         await handleSendMessage(userMsg.content);
       }
