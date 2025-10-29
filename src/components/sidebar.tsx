@@ -835,7 +835,7 @@ export function AppSidebar({
 
       {/* Main content area */}
       <SidebarInset>
-        {/* <AppHeader /> */}
+        <AppHeader />
         {children}
       </SidebarInset>
 

@@ -92,16 +92,41 @@ export default function ChatPage({
 
   useEffect(() => {
     if (currentChatMessages && currentChatMessages.length > 0) {
-      const formattedMessages = currentChatMessages.map((msg, index) => ({
-        id: index + 1,
-        type: msg.type as "user" | "assistant",
-        content: msg.content,
-        timestamp: new Date(msg.timestamp).toLocaleTimeString("en-US", {
+      const formattedMessages = currentChatMessages.map((msg, index) => {
+        // Compute a friendly timestamp
+        const timestamp = new Date(msg.timestamp).toLocaleTimeString("en-US", {
           hour: "numeric",
           minute: "2-digit",
           hour12: true,
-        }),
-      }));
+        });
+
+        // If this is an assistant message, try to compute response time
+        // as the difference between this assistant timestamp and the most
+        // recent previous user message timestamp (in seconds).
+        let responseTime: number | undefined = undefined;
+        if (msg.type === "assistant") {
+          // Find the previous user message (search backwards)
+          for (let j = index - 1; j >= 0; j--) {
+            const prev = currentChatMessages[j];
+            if (prev && prev.type === "user" && prev.timestamp) {
+              const diffMs =
+                (msg.timestamp as number) - (prev.timestamp as number);
+              if (!Number.isNaN(diffMs) && diffMs >= 0) {
+                responseTime = parseFloat((diffMs / 1000).toFixed(1));
+              }
+              break;
+            }
+          }
+        }
+
+        return {
+          id: index + 1,
+          type: msg.type as "user" | "assistant",
+          content: msg.content,
+          timestamp,
+          responseTime,
+        };
+      });
       setMessages(formattedMessages);
       setIsLoadingChat(false);
     } else if (
