@@ -67,10 +67,16 @@ const iconMap: Record<string, React.ComponentType<any>> = {
 };
 
 // Custom Node Component
-const EntityNode = ({ data }: { data: any }) => {
+const EntityNode = ({
+  data,
+  isLightbox = false,
+}: {
+  data: any;
+  isLightbox?: boolean;
+}) => {
   // Icon can be either a string (from JSON) or a component (from processed nodes)
   const IconComponent = React.useMemo(() => {
-    if (typeof data.icon === 'string') {
+    if (typeof data.icon === "string") {
       return iconMap[data.icon] || Map;
     }
     return data.icon || Map;
@@ -78,16 +84,21 @@ const EntityNode = ({ data }: { data: any }) => {
   const borderColor = data.color || "#34C759";
   const isSmall = data.size === "small";
 
+  // Scale everything up for lightbox mode
+  const nodeWidth = isLightbox
+    ? isSmall
+      ? "min-w-[280px] max-w-[320px]"
+      : "min-w-[380px] max-w-[450px]"
+    : isSmall
+      ? "min-w-[140px] max-w-[160px] sm:min-w-[160px] sm:max-w-[180px]"
+      : "min-w-[200px] max-w-[240px] sm:min-w-[240px] sm:max-w-[280px]";
+
   return (
     <div className="relative">
       <div
-        className={`relative bg-white dark:bg-zinc-900 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 ${
-          isSmall
-            ? "min-w-[100px] max-w-[120px] sm:min-w-[120px] sm:max-w-[140px]"
-            : "min-w-[150px] max-w-[170px] sm:min-w-[180px] sm:max-w-[200px]"
-        }`}
+        className={`relative bg-white dark:bg-zinc-900 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 ${nodeWidth}`}
         style={{
-          border: `1px solid ${borderColor}30`,
+          border: `2px solid ${borderColor}40`,
         }}
       >
         <Handle
@@ -95,27 +106,41 @@ const EntityNode = ({ data }: { data: any }) => {
           position={Position.Left}
           style={{
             background: borderColor,
-            width: 8,
-            height: 8,
+            width: isLightbox ? 12 : 8,
+            height: isLightbox ? 12 : 8,
             border: "2px solid white",
           }}
         />
 
-        <div className={isSmall ? "p-2 sm:p-2.5" : "p-2.5 sm:p-3"}>
+        <div
+          className={
+            isLightbox
+              ? isSmall
+                ? "p-4"
+                : "p-5"
+              : isSmall
+                ? "p-3 sm:p-3.5"
+                : "p-3.5 sm:p-4"
+          }
+        >
           {isSmall ? (
-            <div className="flex flex-col items-center gap-1 sm:gap-1.5">
+            <div className="flex flex-col items-center gap-2 sm:gap-2.5">
               <div
-                className="p-2 sm:p-2.5 rounded-lg"
+                className={
+                  isLightbox ? "p-4 rounded-xl" : "p-3 sm:p-3.5 rounded-lg"
+                }
                 style={{ backgroundColor: `${borderColor}15` }}
               >
                 <IconComponent
-                  className="w-4 h-4 sm:w-5 sm:h-5"
+                  className={isLightbox ? "w-8 h-8" : "w-5 h-5 sm:w-6 sm:h-6"}
                   style={{ color: borderColor }}
-                  strokeWidth={2}
+                  strokeWidth={isLightbox ? 2.5 : 2}
                 />
               </div>
               <h4
-                className="font-semibold text-[10px] sm:text-[11px] text-center leading-tight"
+                className={`font-bold text-center leading-tight ${
+                  isLightbox ? "text-base" : "text-xs sm:text-sm"
+                }`}
                 style={{ color: borderColor }}
               >
                 {data.title}
@@ -123,25 +148,37 @@ const EntityNode = ({ data }: { data: any }) => {
             </div>
           ) : (
             <>
-              <div className="flex items-start justify-between gap-1.5 sm:gap-2 mb-2 sm:mb-3">
-                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+              <div
+                className={`flex items-start justify-between gap-2 sm:gap-3 ${isLightbox ? "mb-4" : "mb-3 sm:mb-4"}`}
+              >
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                   <div
-                    className="p-1 sm:p-1.5 rounded-lg flex-shrink-0"
+                    className={
+                      isLightbox ? "p-3 rounded-xl" : "p-2 sm:p-2.5 rounded-lg"
+                    }
                     style={{ backgroundColor: `${borderColor}15` }}
                   >
                     <IconComponent
-                      className="w-3.5 h-3.5 sm:w-4 sm:h-4"
+                      className={
+                        isLightbox ? "w-6 h-6" : "w-5 h-5 sm:w-5 sm:h-5"
+                      }
                       style={{ color: borderColor }}
-                      strokeWidth={2}
+                      strokeWidth={isLightbox ? 2.5 : 2}
                     />
                   </div>
-                  <h4 className="font-semibold text-[10px] sm:text-xs text-zinc-900 dark:text-zinc-100 leading-tight truncate">
+                  <h4
+                    className={`font-bold text-zinc-900 dark:text-zinc-100 leading-tight ${
+                      isLightbox ? "text-lg" : "text-sm sm:text-base"
+                    }`}
+                  >
                     {data.title}
                   </h4>
                 </div>
                 {data.category && (
                   <span
-                    className="px-1.5 sm:px-2 py-0.5 text-[8px] sm:text-[9px] font-semibold rounded-full whitespace-nowrap flex-shrink-0"
+                    className={`px-2.5 sm:px-3 py-1 font-semibold rounded-full whitespace-nowrap flex-shrink-0 ${
+                      isLightbox ? "text-xs" : "text-[10px] sm:text-xs"
+                    }`}
                     style={{
                       backgroundColor: `${borderColor}20`,
                       color: borderColor,
@@ -153,27 +190,48 @@ const EntityNode = ({ data }: { data: any }) => {
               </div>
 
               {data.attributes && data.attributes.length > 0 && (
-                <div className="space-y-1.5 sm:space-y-2 mb-1.5 sm:mb-2 hidden sm:block">
-                  {data.attributes.slice(0, 2).map((attr: any, i: number) => {
-                    const AttrIcon = attr.icon ? iconMap[attr.icon] || Target : Target;
-                    return (
-                      <div key={i} className="flex items-center gap-1.5 sm:gap-2">
-                        <AttrIcon
-                          className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0"
-                          style={{ color: `${borderColor}90` }}
-                          strokeWidth={2}
-                        />
-                        <span className="text-[10px] sm:text-[11px] text-zinc-600 dark:text-zinc-400 leading-tight truncate">
-                          {attr.text}
-                        </span>
-                      </div>
-                    );
-                  })}
+                <div
+                  className={`space-y-2 sm:space-y-2.5 ${isLightbox ? "mb-3" : "mb-2 sm:mb-3"}`}
+                >
+                  {data.attributes
+                    .slice(0, isLightbox ? 3 : 2)
+                    .map((attr: any, i: number) => {
+                      const AttrIcon = attr.icon
+                        ? iconMap[attr.icon] || Target
+                        : Target;
+                      return (
+                        <div
+                          key={i}
+                          className="flex items-center gap-2 sm:gap-2.5"
+                        >
+                          <AttrIcon
+                            className={
+                              isLightbox
+                                ? "w-5 h-5 flex-shrink-0"
+                                : "w-4 h-4 sm:w-4 sm:h-4 flex-shrink-0"
+                            }
+                            style={{ color: `${borderColor}90` }}
+                            strokeWidth={isLightbox ? 2.5 : 2}
+                          />
+                          <span
+                            className={`text-zinc-700 dark:text-zinc-300 leading-relaxed ${
+                              isLightbox ? "text-sm" : "text-xs sm:text-sm"
+                            }`}
+                          >
+                            {attr.text}
+                          </span>
+                        </div>
+                      );
+                    })}
                 </div>
               )}
 
               {data.moreCount && (
-                <p className="text-[9px] sm:text-[10px] text-zinc-400 dark:text-zinc-500 mt-1.5 sm:mt-2 hidden sm:block">
+                <p
+                  className={`text-zinc-500 dark:text-zinc-400 mt-2 sm:mt-2.5 ${
+                    isLightbox ? "text-sm" : "text-xs sm:text-sm"
+                  }`}
+                >
                   +{data.moreCount} More Attributes
                 </p>
               )}
@@ -186,8 +244,8 @@ const EntityNode = ({ data }: { data: any }) => {
           position={Position.Right}
           style={{
             background: borderColor,
-            width: 8,
-            height: 8,
+            width: isLightbox ? 12 : 8,
+            height: isLightbox ? 12 : 8,
             border: "2px solid white",
           }}
         />
@@ -196,12 +254,21 @@ const EntityNode = ({ data }: { data: any }) => {
   );
 };
 
-const nodeTypes = {
-  entityNode: EntityNode,
-};
+// Create node types factory to pass isLightbox prop
+const createNodeTypes = (isLightbox: boolean) => ({
+  entityNode: (props: any) => <EntityNode {...props} isLightbox={isLightbox} />,
+});
 
 // Inner component that uses ReactFlow hooks
-function RoadmapDiagramInner({ roadmapData }: { roadmapData: any }) {
+function RoadmapDiagramInner({
+  roadmapData,
+  fullHeight = false,
+  isLightbox = false,
+}: {
+  roadmapData: any;
+  fullHeight?: boolean;
+  isLightbox?: boolean;
+}) {
   const { fitView } = useReactFlow();
   const [isMobile, setIsMobile] = React.useState(false);
 
@@ -214,33 +281,56 @@ function RoadmapDiagramInner({ roadmapData }: { roadmapData: any }) {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
+  const nodeTypes = React.useMemo(
+    () => createNodeTypes(isLightbox),
+    [isLightbox]
+  );
+
   // Process nodes and edges from roadmap data
   const processedNodes = useMemo(() => {
     if (!roadmapData?.nodes) return [];
-    return roadmapData.nodes.map((node: any) => {
-      const IconComponent = node.data.icon ? iconMap[node.data.icon] || Map : Map;
+    return roadmapData.nodes.map((node: any, index: number) => {
+      const IconComponent = node.data.icon
+        ? iconMap[node.data.icon] || Map
+        : Map;
+      // Increase horizontal spacing between nodes for lightbox
+      const baseSpacing = isLightbox ? 500 : 250;
+      const adjustedX =
+        isLightbox && node.position?.x
+          ? node.position.x * (baseSpacing / 250)
+          : node.position?.x || index * baseSpacing;
       return {
         ...node,
+        position: {
+          x: adjustedX,
+          y: node.position?.y || 0,
+        },
         data: {
           ...node.data,
           icon: IconComponent,
         },
       };
     });
-  }, [roadmapData]);
+  }, [roadmapData, isLightbox]);
 
   const processedEdges = useMemo(() => {
     if (!roadmapData?.edges) return [];
     return roadmapData.edges.map((edge: any) => ({
       ...edge,
+      style: {
+        ...edge.style,
+        strokeWidth: isLightbox ? 3 : 2,
+        strokeDasharray:
+          edge.style?.strokeDasharray || (isLightbox ? "8,4" : "6,3"),
+      },
       markerEnd: edge.markerEnd || {
         type: MarkerType.ArrowClosed,
         color: edge.style?.stroke || "#06B6D4",
-        width: 20,
-        height: 20,
+        width: isLightbox ? 24 : 20,
+        height: isLightbox ? 24 : 20,
       },
     }));
-  }, [roadmapData]);
+  }, [roadmapData, isLightbox]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(processedNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(processedEdges);
@@ -253,26 +343,36 @@ function RoadmapDiagramInner({ roadmapData }: { roadmapData: any }) {
   React.useEffect(() => {
     const timer = setTimeout(() => {
       fitView({
-        padding: isMobile ? 0.1 : 0.2,
-        minZoom: isMobile ? 0.3 : 0.5,
-        maxZoom: isMobile ? 1.2 : 1.5,
+        padding: isLightbox ? (isMobile ? 40 : 60) : isMobile ? 0.1 : 0.2,
+        minZoom: isMobile ? 0.3 : isLightbox ? 0.4 : 0.5,
+        maxZoom: isMobile ? 1.2 : isLightbox ? 2 : 1.5,
         duration: 300,
       });
     }, 100);
     return () => clearTimeout(timer);
-  }, [isMobile, fitView]);
+  }, [isMobile, fitView, isLightbox]);
 
   return (
-    <div className="w-full h-[400px] sm:h-[500px] md:h-[600px] lg:h-[700px] relative my-4 rounded-lg overflow-hidden border border-border">
+    <div
+      className={`w-full relative rounded-lg overflow-hidden border border-border ${
+        fullHeight
+          ? "h-full"
+          : "h-[400px] sm:h-[500px] md:h-[600px] lg:h-[700px] my-4"
+      }`}
+    >
       <ReactFlow
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         nodeTypes={nodeTypes}
-        minZoom={isMobile ? 0.2 : 0.5}
-        maxZoom={isMobile ? 2 : 1.5}
-        defaultViewport={{ x: 0, y: 0, zoom: isMobile ? 0.6 : 0.85 }}
+        minZoom={isMobile ? 0.2 : isLightbox ? 0.3 : 0.5}
+        maxZoom={isMobile ? 2 : isLightbox ? 2.5 : 1.5}
+        defaultViewport={{
+          x: 0,
+          y: 0,
+          zoom: isMobile ? 0.6 : isLightbox ? 0.7 : 0.85,
+        }}
         proOptions={{ hideAttribution: true }}
         zoomOnScroll={!isMobile}
         panOnScroll={isMobile}
@@ -287,15 +387,26 @@ function RoadmapDiagramInner({ roadmapData }: { roadmapData: any }) {
 }
 
 // Main component with ReactFlowProvider
-export function RoadmapRenderer({ roadmapData }: { roadmapData: any }) {
+export function RoadmapRenderer({
+  roadmapData,
+  fullHeight = false,
+  isLightbox = false,
+}: {
+  roadmapData: any;
+  fullHeight?: boolean;
+  isLightbox?: boolean;
+}) {
   if (!roadmapData || !roadmapData.nodes || roadmapData.nodes.length === 0) {
     return null;
   }
 
   return (
     <ReactFlowProvider>
-      <RoadmapDiagramInner roadmapData={roadmapData} />
+      <RoadmapDiagramInner
+        roadmapData={roadmapData}
+        fullHeight={fullHeight}
+        isLightbox={isLightbox}
+      />
     </ReactFlowProvider>
   );
 }
-

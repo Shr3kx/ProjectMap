@@ -5,8 +5,9 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import rehypeHighlight from "rehype-highlight";
-import { Copy, Check } from "lucide-react";
-import { RoadmapRenderer } from "./RoadmapRenderer";
+import { Copy, Check, Eye } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { RoadmapLightbox } from "./RoadmapLightbox";
 
 interface MarkdownRendererProps {
   content: string;
@@ -14,6 +15,7 @@ interface MarkdownRendererProps {
 
 export function MarkdownRenderer({ content }: MarkdownRendererProps) {
   const [copiedCode, setCopiedCode] = React.useState<string | null>(null);
+  const [isRoadmapOpen, setIsRoadmapOpen] = React.useState(false);
 
   const copyToClipboard = (code: string) => {
     navigator.clipboard.writeText(code);
@@ -39,9 +41,19 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
     return content.replace(/```roadmap-json\n[\s\S]*?\n```/g, "");
   }, [content]);
 
+  // Handle ESC key to close lightbox
+  React.useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isRoadmapOpen) {
+        setIsRoadmapOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [isRoadmapOpen]);
+
   return (
     <div className="markdown-content prose prose-invert max-w-none">
-      {roadmapData && <RoadmapRenderer roadmapData={roadmapData} />}
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeHighlight, rehypeRaw]}
@@ -113,11 +125,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
 
             if (inline) {
               // Inline code - styling handled by CSS
-              return (
-                <code {...props}>
-                  {children}
-                </code>
-              );
+              return <code {...props}>{children}</code>;
             }
 
             // Code block with copy button
@@ -196,6 +204,30 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
       >
         {markdownContent}
       </ReactMarkdown>
+
+      {/* View Roadmap Button - Only show if roadmap data exists */}
+      {roadmapData && (
+        <div className="mt-4 flex justify-start">
+          <Button
+            onClick={() => setIsRoadmapOpen(true)}
+            variant="outline"
+            className="inline-flex items-center gap-2"
+            aria-label="View full roadmap in lightbox"
+          >
+            <Eye className="size-4" aria-hidden="true" />
+            <span>View Roadmap</span>
+          </Button>
+        </div>
+      )}
+
+      {/* Roadmap Lightbox */}
+      {roadmapData && (
+        <RoadmapLightbox
+          roadmapData={roadmapData}
+          open={isRoadmapOpen}
+          onOpenChange={setIsRoadmapOpen}
+        />
+      )}
     </div>
   );
 }
