@@ -363,7 +363,8 @@ body,
 }
 
 .response-card {
-  box-shadow: rgba(0, 0, 0, 0.15) 1.95px 1.95px 2.6px;
+  /* box-shadow: rgba(0, 0, 0, 0.15) 1.95px 1.95px 2.6px; */
+  border: red !important;
 }
 
 /* Code block styling for light/dark modes */
@@ -510,4 +511,10 @@ body,
 .dark .code-copy-button:hover {
   background: #3e4451 !important;
   color: #abb2bf !important;
+}
+
+/* Touch-friendly interactions */
+.touch-manipulation {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }

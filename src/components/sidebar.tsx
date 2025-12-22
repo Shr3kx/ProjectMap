@@ -17,6 +17,7 @@ import {
   SidebarProvider,
   SidebarSeparator,
 } from "@/components/ui/sidebar";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -350,8 +351,13 @@ export function AppSidebar({
         <SidebarHeader>
           {/* Brand */}
           <div className="flex items-center gap-2 px-2">
-            <div className="flex size-6 items-center justify-center rounded-md bg-primary/15 text-primary">
-              <Sparkles className="size-4" />
+            <div className="flex size-6 items-center justify-center rounded-md text-primary">
+          <Image
+            src='/logo.png'
+            alt="logo"
+             width={500}
+              height={800}
+          />
             </div>
             <span className="text-sm font-semibold">ProjectMap</span>
           </div>

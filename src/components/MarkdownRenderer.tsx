@@ -6,6 +6,7 @@ import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import rehypeHighlight from "rehype-highlight";
 import { Copy, Check } from "lucide-react";
+import { RoadmapRenderer } from "./RoadmapRenderer";
 
 interface MarkdownRendererProps {
   content: string;
@@ -20,8 +21,27 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
     setTimeout(() => setCopiedCode(null), 2000);
   };
 
+  // Parse roadmap JSON from content
+  const roadmapData = React.useMemo(() => {
+    try {
+      const roadmapMatch = content.match(/```roadmap-json\n([\s\S]*?)\n```/);
+      if (roadmapMatch && roadmapMatch[1]) {
+        return JSON.parse(roadmapMatch[1]);
+      }
+    } catch (error) {
+      console.error("Error parsing roadmap JSON:", error);
+    }
+    return null;
+  }, [content]);
+
+  // Remove roadmap JSON from content for markdown rendering
+  const markdownContent = React.useMemo(() => {
+    return content.replace(/```roadmap-json\n[\s\S]*?\n```/g, "");
+  }, [content]);
+
   return (
     <div className="markdown-content prose prose-invert max-w-none">
+      {roadmapData && <RoadmapRenderer roadmapData={roadmapData} />}
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeHighlight, rehypeRaw]}
@@ -174,7 +194,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
           ),
         }}
       >
-        {content}
+        {markdownContent}
       </ReactMarkdown>
     </div>
   );

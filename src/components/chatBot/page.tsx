@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { FolderKanban, Map, Users, Zap } from "lucide-react";
 import MessageList from "./MessageList";
 import ChatInput from "./ChatInput";
+import WorkflowDiagram from "../roadmap/page";
 
 interface Message {
   id: number;
@@ -36,6 +37,7 @@ export default function ChatPage({
   const [isLoadingChat, setIsLoadingChat] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isAiThinking, setIsAiThinking] = useState(false);
+  const [hasMessages, setHasMessages] = useState(false);
 
   const currentChatMessages = useQuery(
     api.chats.getChatMessages,
@@ -87,6 +89,7 @@ export default function ChatPage({
           timestamp: getFormattedTime(),
         },
       ]);
+      setHasMessages(false);
     }
   }, [isNewChat]);
 
@@ -129,6 +132,7 @@ export default function ChatPage({
       });
       setMessages(formattedMessages);
       setIsLoadingChat(false);
+      setHasMessages(formattedMessages.length > 1);
     } else if (
       currentChatId &&
       currentChatMessages &&
@@ -136,6 +140,7 @@ export default function ChatPage({
     ) {
       setMessages([]);
       setIsLoadingChat(false);
+      setHasMessages(false);
     }
   }, [currentChatMessages, currentChatId]);
 
@@ -157,6 +162,7 @@ export default function ChatPage({
       setMessages(prev => [...prev, newMessage]);
       setIsLoading(true);
       setIsAiThinking(true);
+      setHasMessages(true);
 
       try {
         let chatId = currentChatId;
@@ -315,71 +321,82 @@ export default function ChatPage({
   ];
 
   return (
-    <div className="min-h-screen bg-transparent overflow-y-auto">
-      <div className="container mx-auto px-4 py-2 max-w-4xl">
-        {/* Welcome Section */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium mb-4">
-            <FolderKanban className="w-4 h-4" />
-            Ready to map your project?
-          </div>
-          <h2 className="text-3xl font-bold text-foreground mb-4">
-            Turn your ideas into clear roadmaps
-          </h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Perfect for indie developers, students, and small teams who want
-            beautiful, shareable project roadmaps without the complexity of
-            enterprise tools.
-          </p>
-        </div>
-
-        {/* Quick Starters */}
-        <div className="mb-8">
-          <h3 className="text-sm font-medium text-muted-foreground mb-4 text-center">
-            Quick starters
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl mx-auto">
-            {quickStarters.map((starter, index) => (
-              <Button
-                key={index}
-                variant="outline"
-                className="justify-start h-auto p-4 text-left bg-transparent"
-                onClick={() => handleSendMessage(starter.text)}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
-                    {starter.icon}
-                  </div>
-                  <div>
-                    <div className="font-medium text-foreground">
-                      {starter.text}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {starter.category}
-                    </div>
-                  </div>
+    <div className="flex flex-col h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] bg-transparent overflow-hidden">
+      <div className="flex-1 overflow-y-auto">
+        <div className="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8 max-w-4xl">
+          {/* Welcome Section - Hidden when messages exist */}
+          {!hasMessages && (
+            <>
+              <div className="text-center mb-6 sm:mb-8">
+                <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium mb-3 sm:mb-4">
+                  <FolderKanban className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden min-[475px]:inline">Ready to map your project?</span>
+                  <span className="min-[475px]:hidden">Get Started</span>
                 </div>
-              </Button>
-            ))}
-          </div>
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-3 sm:mb-4 px-2">
+                  Turn your ideas into clear roadmaps
+                </h2>
+                <p className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-2xl mx-auto px-4">
+                  Perfect for indie developers, students, and small teams who want
+                  beautiful, shareable project roadmaps without the complexity of
+                  enterprise tools.
+                </p>
+              </div>
+
+              {/* Quick Starters */}
+              <div className="mb-6 sm:mb-8">
+                <h3 className="text-xs sm:text-sm font-medium text-muted-foreground mb-3 sm:mb-4 text-center">
+                  Quick starters
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 max-w-2xl mx-auto">
+                  {quickStarters.map((starter, index) => (
+                    <Button
+                      key={index}
+                      variant="outline"
+                      className="justify-start h-auto p-3 sm:p-4 text-left bg-transparent hover:bg-accent/50 transition-colors"
+                      onClick={() => handleSendMessage(starter.text)}
+                    >
+                      <div className="flex items-center gap-2 sm:gap-3 w-full">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary flex-shrink-0">
+                          {starter.icon}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-foreground text-sm sm:text-base truncate">
+                            {starter.text}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {starter.category}
+                          </div>
+                        </div>
+                      </div>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Message List */}
+          <MessageList
+            messages={messages}
+            isLoadingChat={isLoadingChat}
+            isAiThinking={isAiThinking}
+            onCopy={handleCopy}
+            onRegenerate={handleRegenerate}
+            onDelete={handleDelete}
+          />
         </div>
+      </div>
 
-        {/* Optimized Message List */}
-        <MessageList
-          messages={messages}
-          isLoadingChat={isLoadingChat}
-          isAiThinking={isAiThinking}
-          onCopy={handleCopy}
-          onRegenerate={handleRegenerate}
-          onDelete={handleDelete}
-        />
-
-        {/* Optimized Chat Input */}
-        <ChatInput
-          onSendMessage={handleSendMessage}
-          isLoading={isLoading}
-          placeholder="Describe your project idea or ask for help with your roadmap..."
-        />
+      {/* Chat Input - Fixed at bottom */}
+      <div className="flex-shrink-0 border-t border-border/40 bg-background/80 backdrop-blur-sm">
+        <div className="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 max-w-4xl py-3 sm:py-4">
+          <ChatInput
+            onSendMessage={handleSendMessage}
+            isLoading={isLoading}
+            placeholder="Describe your project idea or ask for help with your roadmap..."
+          />
+        </div>
       </div>
     </div>
   );

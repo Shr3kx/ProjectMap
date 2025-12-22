@@ -18,9 +18,13 @@ const fira_code = Fira_Code({
   variable: "--font-mono",
 });
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "ProjectMap",
   description: "Map your project ideas",
+  icons: {
+    icon: '/logo.png',
+    apple: '/logo.png',
+  },
 };
 
 export default function RootLayout({
