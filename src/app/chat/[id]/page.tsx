@@ -9,7 +9,8 @@ import { api } from "../../../../convex/_generated/api";
 import { useUser } from "@clerk/nextjs";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import AppSidebar from "@/components/sidebar";
+import { AppSidebar } from "@/components/app-sidebar";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import MessageList from "@/components/chatBot/MessageList";
 import ChatInput from "@/components/chatBot/ChatInput";
 
@@ -19,6 +20,14 @@ function ChatConversationPage() {
   const router = useRouter();
   const params = useParams();
   const chatId = params.id as string;
+
+  const handleChatSelect = (selectedChatId: string) => {
+    router.push(`/chat/${selectedChatId}`);
+  };
+
+  const handleNewChat = () => {
+    router.push("/");
+  };
 
   const [localMessages, setLocalMessages] = useState<
     Array<{
@@ -86,7 +95,7 @@ function ChatConversationPage() {
       };
 
       // Add user message and start AI thinking indicator
-      setLocalMessages(prev => [...prev, newMessage]);
+      setLocalMessages((prev) => [...prev, newMessage]);
       setIsLoading(true);
       setIsAiThinking(true);
 
@@ -106,8 +115,8 @@ function ChatConversationPage() {
          * Filters out loading/empty messages and formats for API
          */
         const conversationHistory = localMessages
-          .filter(msg => !msg.isLoading && msg.content.trim() !== "")
-          .map(msg => ({
+          .filter((msg) => !msg.isLoading && msg.content.trim() !== "")
+          .map((msg) => ({
             role: msg.type === "user" ? "user" : "assistant",
             content: msg.content,
           }));
@@ -176,8 +185,8 @@ function ChatConversationPage() {
           responseTime: parseFloat(responseTime),
         };
 
-        setLocalMessages(prev => [...prev, assistantMessage]);
-        await new Promise(resolve => setTimeout(resolve, 50));
+        setLocalMessages((prev) => [...prev, assistantMessage]);
+        await new Promise((resolve) => setTimeout(resolve, 50));
       } catch (error) {
         console.error("Error sending message:", error);
 
@@ -190,9 +199,9 @@ function ChatConversationPage() {
           timestamp: currentTime,
         };
 
-        setLocalMessages(prev => [...prev, errorMessage]);
+        setLocalMessages((prev) => [...prev, errorMessage]);
         setIsAiThinking(false);
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await new Promise((resolve) => setTimeout(resolve, 50));
       } finally {
         setIsLoading(false);
       }
@@ -205,81 +214,103 @@ function ChatConversationPage() {
   }, []);
 
   const handleDelete = useCallback((messageId: number) => {
-    setLocalMessages(prev => prev.filter(m => m.id !== messageId));
+    setLocalMessages((prev) => prev.filter((m) => m.id !== messageId));
   }, []);
 
   if (!isLoaded) {
     return (
-      <AppSidebar>
-        <div className="flex items-center justify-center h-screen">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </AppSidebar>
+      <SidebarProvider>
+        <AppSidebar onChatSelect={handleChatSelect} onNewChat={handleNewChat} />
+        <SidebarInset>
+          <div className="flex items-center justify-center h-screen">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        </SidebarInset>
+      </SidebarProvider>
     );
   }
 
   if (!chatData) {
     return (
-      <AppSidebar>
-        <div className="flex flex-col items-center justify-center h-screen">
-          <h1 className="text-2xl font-bold mb-4">Chat not found</h1>
-          <Link href="/">
-            <Button>
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Home
-            </Button>
-          </Link>
-        </div>
-      </AppSidebar>
+      <SidebarProvider>
+        <AppSidebar onChatSelect={handleChatSelect} onNewChat={handleNewChat} />
+        <SidebarInset>
+          <div className="flex flex-col items-center justify-center h-screen">
+            <h1 className="text-2xl font-bold mb-4">
+              <div className="loading">
+                <svg width="64px" height="48px">
+                  <polyline
+                    points="0.157 23.954, 14 23.954, 21.843 48, 43 0, 50 24, 64 24"
+                    id="back"
+                  ></polyline>
+                  <polyline
+                    points="0.157 23.954, 14 23.954, 21.843 48, 43 0, 50 24, 64 24"
+                    id="front"
+                  ></polyline>
+                </svg>
+              </div>
+            </h1>
+            <Link href="/">
+              <Button>
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Home
+              </Button>
+            </Link>
+          </div>
+        </SidebarInset>
+      </SidebarProvider>
     );
   }
 
   return (
-    <AppSidebar>
-      <div className="min-h-screen bg-background">
-        <div className="container mx-auto px-4 py-2 max-w-4xl">
-          {/* Header */}
-          <div className="flex items-center gap-4 mb-6 p-4">
-            <Link href="/">
-              <Button variant="ghost" size="icon">
-                <ArrowLeft className="w-4 h-4" />
-              </Button>
-            </Link>
-            <div>
-              <h1 className="text-xl font-semibold">
-                {chatData?.title || "Chat"}
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                {chatMessages?.length || 0} messages
-              </p>
+    <SidebarProvider>
+      <AppSidebar onChatSelect={handleChatSelect} onNewChat={handleNewChat} />
+      <SidebarInset>
+        <div className="min-h-screen bg-background">
+          <div className="container mx-auto px-4 py-2 max-w-4xl">
+            {/* Header */}
+            <div className="flex items-center gap-4 mb-6 p-4">
+              <Link href="/">
+                <Button variant="ghost" size="icon">
+                  <ArrowLeft className="w-4 h-4" />
+                </Button>
+              </Link>
+              <div>
+                <h1 className="text-xl font-semibold">
+                  {chatData?.title || "Chat"}
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  {chatMessages?.length || 0} messages
+                </p>
+              </div>
             </div>
+
+            {/* Loading state */}
+            {isLoaded && chatId && !chatMessages && (
+              <div className="flex items-center justify-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            )}
+
+            {/* Optimized Message List */}
+            <MessageList
+              messages={localMessages}
+              isLoadingChat={false}
+              isAiThinking={isAiThinking}
+              onCopy={handleCopy}
+              onDelete={handleDelete}
+            />
+
+            {/* Optimized Chat Input */}
+            <ChatInput
+              onSendMessage={handleSendMessage}
+              isLoading={isLoading}
+              placeholder="Continue the conversation..."
+            />
           </div>
-
-          {/* Loading state */}
-          {isLoaded && chatId && !chatMessages && (
-            <div className="flex items-center justify-center h-64">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          )}
-
-          {/* Optimized Message List */}
-          <MessageList
-            messages={localMessages}
-            isLoadingChat={false}
-            isAiThinking={isAiThinking}
-            onCopy={handleCopy}
-            onDelete={handleDelete}
-          />
-
-          {/* Optimized Chat Input */}
-          <ChatInput
-            onSendMessage={handleSendMessage}
-            isLoading={isLoading}
-            placeholder="Continue the conversation..."
-          />
         </div>
-      </div>
-    </AppSidebar>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }
 

@@ -354,7 +354,7 @@ function RoadmapDiagramInner({
 
   return (
     <div
-      className={`w-full relative rounded-lg overflow-hidden border border-border ${
+      className={`w-full relative rounded-lg overflow-hidden ${
         fullHeight
           ? "h-full"
           : "h-[400px] sm:h-[500px] md:h-[600px] lg:h-[700px] my-4"
@@ -386,7 +386,6 @@ function RoadmapDiagramInner({
   );
 }
 
-// Main component with ReactFlowProvider
 export function RoadmapRenderer({
   roadmapData,
   fullHeight = false,

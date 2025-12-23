@@ -36,7 +36,7 @@ export function RoadmapLightbox({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="!max-w-[98vw] w-[98vw] h-[90vh] max-h-[90vh] p-0 sm:p-6 flex flex-col"
+        className="!max-w-[98vw] w-[98vw] h-[90vh] max-h-[90vh] p-0 sm:p-6 flex flex-col bg-background/95 backdrop-blur-md border-border/50 shadow-2xl"
         aria-label="Roadmap viewer"
         aria-describedby="roadmap-description"
       >
