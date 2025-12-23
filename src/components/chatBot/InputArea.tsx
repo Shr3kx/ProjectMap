@@ -150,7 +150,7 @@ export const InputArea = forwardRef<InputAreaRef, InputAreaProps>(
               backdropFilter: "blur(10px)",
               backgroundColor: "rgba(255, 255, 255, 0.02)",
               border: "1px solid rgba(255, 255, 255, 0.05)",
-              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
+              boxShadow: "0 8px 10px rgba(0, 0, 0, 0.3)",
             }}
           >
             {/* Inner Glass Container */}

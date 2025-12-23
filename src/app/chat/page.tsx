@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2, Github } from "lucide-react";
-import { useQuery, useMutation } from "convex/react";
-import { api } from "../../../../convex/_generated/api";
+import { useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 import { useUser } from "@clerk/nextjs";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AppSidebar } from "@/components/app-sidebar";
 import {
@@ -19,14 +19,12 @@ import ThemeSwitcher from "@/components/theme-switcher";
 import { ChatInterface } from "@/components/chatBot/ChatInterface";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { Message, Attachment } from "@/types/chat";
-import type { Id } from "../../../../convex/_generated/dataModel";
+import type { Id } from "../../../convex/_generated/dataModel";
 
 export default function ChatPage() {
   const { user, isSignedIn, isLoaded } = useUser();
   const userId = user?.id;
   const router = useRouter();
-  const params = useParams();
-  const chatId = params.id as string | undefined;
 
   const handleChatSelect = (selectedChatId: string) => {
     router.push(`/chat/${selectedChatId}`);
@@ -38,50 +36,10 @@ export default function ChatPage() {
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [currentChatId, setCurrentChatId] = useState<Id<"chats"> | null>(
-    chatId ? (chatId as Id<"chats">) : null
-  );
+  const [currentChatId, setCurrentChatId] = useState<Id<"chats"> | null>(null);
 
   const createChat = useMutation(api.chats.createChat);
   const addMessage = useMutation(api.chats.addMessage);
-
-  const chatData = useQuery(
-    api.chats.getChat,
-    chatId ? { chatId: chatId as Id<"chats"> } : "skip"
-  );
-
-  const chatMessages = useQuery(
-    api.chats.getChatMessages,
-    chatId ? { chatId: chatId as Id<"chats"> } : "skip"
-  );
-
-  // Update currentChatId when route changes
-  useEffect(() => {
-    if (chatId) {
-      setCurrentChatId(chatId as Id<"chats">);
-    } else {
-      setCurrentChatId(null);
-      setMessages([]);
-    }
-  }, [chatId]);
-
-  // Load messages when chatId is available
-  useEffect(() => {
-    if (!isLoaded) return;
-
-    if (chatId && chatMessages) {
-      const formattedMessages: Message[] = chatMessages.map((msg) => ({
-        id: msg._id.toString(),
-        role: msg.type as "user" | "assistant",
-        content: msg.content,
-        timestamp: msg.timestamp,
-      }));
-      setMessages(formattedMessages);
-    } else if (!chatId) {
-      // Default view - no messages
-      setMessages([]);
-    }
-  }, [isLoaded, chatId, chatMessages]);
 
   const handleSendMessage = useCallback(
     async (content: string, attachments?: Attachment[]) => {
@@ -214,42 +172,6 @@ export default function ChatPage() {
   );
 
   if (!isLoaded) {
-    return (
-      <SidebarProvider>
-        <AppSidebar onChatSelect={handleChatSelect} onNewChat={handleNewChat} />
-        <SidebarInset>
-          <header className="flex h-16 shrink-0 items-center gap-2">
-            <div className="flex items-center gap-2 px-4">
-              <SidebarTrigger className="-ml-1" />
-              <Separator
-                orientation="vertical"
-                className="mr-2 data-[orientation=vertical]:h-4"
-              />
-              <div className="ml-auto flex items-center gap-2">
-                <ThemeSwitcher />
-                <Link href="https://github.com/Shr3kx" target="_blank">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-8"
-                    aria-label="GitHub"
-                  >
-                    <Github className="size-4" />
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </header>
-          <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        </SidebarInset>
-      </SidebarProvider>
-    );
-  }
-
-  // Show loading state if chatId is provided but chat data is not loaded yet
-  if (chatId && !chatData) {
     return (
       <SidebarProvider>
         <AppSidebar onChatSelect={handleChatSelect} onNewChat={handleNewChat} />

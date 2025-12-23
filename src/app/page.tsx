@@ -21,15 +21,15 @@ export default function Page() {
   const handleChatSelect = (chatId: string) => {
     setSelectedChatId(chatId);
     setIsNewChat(false); // Clear new chat state when selecting existing chat
-    // Navigate to the chat page
+    // Navigate to the chat page with ID
     router.push(`/chat/${chatId}`);
   };
 
   const handleNewChat = () => {
     setSelectedChatId(null); // Clear selected chat
     setIsNewChat(true); // Set new chat state
-    // Navigate back to home if we're on a chat page
-    router.push("/");
+    // Navigate to chat page
+    router.push("/chat");
   };
   return (
     <SidebarProvider>
