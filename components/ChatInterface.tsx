@@ -20,6 +20,7 @@ import {
   exportConversationToPDF,
   exportFromMessageToPDF,
 } from "@/utils/pdfExport";
+import { parseRoadmapFromContent } from "@/utils/parseRoadmap";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useSession } from "@/lib/auth-client";
 import { useMutation } from "convex/react";
@@ -293,14 +294,21 @@ export function ChatInterface() {
       // Calculate time taken
       const timeTaken = Date.now() - requestStartTime.current;
 
-      // Add assistant message with metadata
+      const { contentWithoutRoadmap, roadmapData } = parseRoadmapFromContent(
+        data.content,
+      );
+
       const assistantMessage: MessageWithMetadata = {
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: data.content,
+        content: contentWithoutRoadmap,
         timestamp: Date.now(),
         modelName: projectMapConfig.name,
         timeTaken: timeTaken,
+        ...(roadmapData && {
+          roadmapData,
+          rawContent: data.content,
+        }),
       };
 
       setMessages(prev => [...prev, assistantMessage]);
@@ -333,11 +341,11 @@ export function ChatInterface() {
             })),
           });
 
-          // Save assistant message
+          // Save assistant message (use raw content when roadmap was parsed)
           const assistantMessageId = await saveMessage({
             conversationId: conversationIdRef.current,
             role: assistantMessage.role,
-            content: assistantMessage.content,
+            content: assistantMessage.rawContent ?? assistantMessage.content,
             timestamp: assistantMessage.timestamp,
             modelName: assistantMessage.modelName,
             timeTaken: assistantMessage.timeTaken,

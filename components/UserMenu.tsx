@@ -41,8 +41,8 @@ export function UserMenu({ user }: UserMenuProps) {
             router.push("/");
             router.refresh();
           },
-          onError: error => {
-            toast.error(error?.message || "Failed to sign out");
+          onError: (err: unknown) => {
+            toast.error(err instanceof Error ? err.message : "Failed to sign out");
             setIsSigningOut(false);
           },
         },

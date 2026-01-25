@@ -10,8 +10,11 @@ import {
   Edit,
   RefreshCw,
   FileDown,
+  Map,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { Button } from "@/components/ui/button";
+import { RoadmapModal } from "@/components/RoadmapModal";
 
 interface MessageBubbleProps {
   message: Message;
@@ -32,6 +35,8 @@ export function MessageBubble({
 }: MessageBubbleProps) {
   const isUser = message.role === "user";
   const [isHovered, setIsHovered] = useState(false);
+  const [roadmapModalOpen, setRoadmapModalOpen] = useState(false);
+  const hasRoadmap = !isUser && message.roadmapData && message.roadmapData.length > 0;
 
   const handleCopy = () => {
     if (message.content) {
@@ -134,7 +139,31 @@ export function MessageBubble({
               )}
             </div>
           )}
+
+          {/* View Roadmap button when roadmap data is present */}
+          {hasRoadmap && (
+            <div className="mt-3 pt-3 border-t border-border/50">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => setRoadmapModalOpen(true)}
+              >
+                <Map className="size-4" />
+                View Roadmap
+              </Button>
+            </div>
+          )}
         </div>
+
+        {hasRoadmap && (
+          <RoadmapModal
+            open={roadmapModalOpen}
+            onOpenChange={setRoadmapModalOpen}
+            nodes={message.roadmapData!}
+          />
+        )}
 
         {/* Action Buttons - Show on hover */}
         {isHovered && (

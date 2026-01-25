@@ -1,5 +1,7 @@
 // Chat message type definitions for ProjectMap
 
+import type { RoadmapNodeData } from "./roadmap";
+
 export interface Message {
   id: string;
   role: "user" | "assistant";
@@ -8,6 +10,10 @@ export interface Message {
   attachments?: Attachment[];
   modelName?: string;
   timeTaken?: number;
+  /** Parsed roadmap nodes when AI returns a roadmap-json code block */
+  roadmapData?: RoadmapNodeData[];
+  /** Raw API response when roadmap was parsed; used for persisting to DB */
+  rawContent?: string;
 }
 
 export interface Attachment {

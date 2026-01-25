@@ -279,17 +279,22 @@ export const getUserConversations = query({
       }
     });
 
-    // For each conversation, get the latest message timestamp and chat name
+    // For each conversation, get the latest message timestamp, chat name, pinned status, and folder
     const conversations = Array.from(conversationIds).map((convId) => {
       const convMessages = messages.filter((m) => m.conversationId === convId);
       const latestMessage = convMessages.reduce((latest, msg) =>
         msg.timestamp > latest.timestamp ? msg : latest
       );
-      // Get chat name from any message in the conversation (they should all have the same name)
-      const chatName = convMessages.find((m) => m.chatName)?.chatName || "New Chat";
+      // Get chat name, pinned status, and folderId from any message (they should all have the same values)
+      const firstMessage = convMessages[0];
+      const chatName = firstMessage.chatName || "New Chat";
+      const isPinned = firstMessage.isPinned || false;
+      const folderId = firstMessage.folderId || undefined;
       return {
         conversationId: convId,
         chatName,
+        isPinned,
+        folderId,
         lastMessageTimestamp: latestMessage.timestamp,
         messageCount: convMessages.length,
       };
@@ -360,5 +365,139 @@ export const deleteConversation = mutation({
     await Promise.all(messages.map((msg) => ctx.db.delete(msg._id)));
 
     return { success: true, deletedCount: messages.length };
+  },
+});
+
+/**
+ * Pin or unpin a conversation
+ * Updates all messages in the conversation to have the same pinned status
+ */
+export const togglePinConversation = mutation({
+  args: {
+    conversationId: v.string(),
+    isPinned: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const user = await authComponent.getAuthUser(ctx);
+    if (!user) {
+      throw new Error("User must be authenticated to pin conversations");
+    }
+
+    const userId = user._id.toString();
+
+    // Get all messages in the conversation
+    const messages = await ctx.db
+      .query("chats")
+      .withIndex("by_user_and_conversation", (q) =>
+        q.eq("userId", userId).eq("conversationId", args.conversationId)
+      )
+      .collect();
+
+    if (messages.length === 0) {
+      throw new Error("Conversation not found");
+    }
+
+    // Update all messages in the conversation
+    await Promise.all(
+      messages.map((msg) =>
+        ctx.db.patch(msg._id, {
+          isPinned: args.isPinned,
+        })
+      )
+    );
+
+    return { success: true, updatedCount: messages.length };
+  },
+});
+
+/**
+ * Move a conversation to a folder (or remove from folder)
+ */
+export const moveConversationToFolder = mutation({
+  args: {
+    conversationId: v.string(),
+    folderId: v.optional(v.id("folders")),
+  },
+  handler: async (ctx, args) => {
+    const user = await authComponent.getAuthUser(ctx);
+    if (!user) {
+      throw new Error("User must be authenticated to move conversations");
+    }
+
+    const userId = user._id.toString();
+
+    // Verify folder ownership if folderId is provided
+    if (args.folderId) {
+      const folder = await ctx.db.get(args.folderId);
+      if (!folder) {
+        throw new Error("Folder not found");
+      }
+      if (folder.userId !== userId) {
+        throw new Error("Unauthorized: You can only move chats to your own folders");
+      }
+    }
+
+    // Get all messages in the conversation
+    const messages = await ctx.db
+      .query("chats")
+      .withIndex("by_user_and_conversation", (q) =>
+        q.eq("userId", userId).eq("conversationId", args.conversationId)
+      )
+      .collect();
+
+    if (messages.length === 0) {
+      throw new Error("Conversation not found");
+    }
+
+    // Update all messages in the conversation
+    await Promise.all(
+      messages.map((msg) =>
+        ctx.db.patch(msg._id, {
+          folderId: args.folderId,
+        })
+      )
+    );
+
+    return { success: true, updatedCount: messages.length };
+  },
+});
+
+/**
+ * Remove conversation from folder
+ */
+export const removeConversationFromFolder = mutation({
+  args: {
+    conversationId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const user = await authComponent.getAuthUser(ctx);
+    if (!user) {
+      throw new Error("User must be authenticated to remove conversations from folders");
+    }
+
+    const userId = user._id.toString();
+
+    // Get all messages in the conversation
+    const messages = await ctx.db
+      .query("chats")
+      .withIndex("by_user_and_conversation", (q) =>
+        q.eq("userId", userId).eq("conversationId", args.conversationId)
+      )
+      .collect();
+
+    if (messages.length === 0) {
+      throw new Error("Conversation not found");
+    }
+
+    // Update all messages to remove folderId
+    await Promise.all(
+      messages.map((msg) =>
+        ctx.db.patch(msg._id, {
+          folderId: undefined,
+        })
+      )
+    );
+
+    return { success: true, updatedCount: messages.length };
   },
 });
