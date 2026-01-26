@@ -11,7 +11,7 @@ export const authComponent = createClient<DataModel>(components.betterAuth);
 
 export const createAuth = (ctx: GenericCtx<DataModel>) => {
   // Validate environment variables at runtime (not at module load time)
-  const siteUrl = process.env.SITE_URL;
+  const siteUrl = process.env.NEXT_PUBLIC_CONVEX_SITE_URL;
   if (!siteUrl) {
     throw new Error(
       "SITE_URL environment variable is not set in Convex. Set it using: npx convex env set SITE_URL http://localhost:3000",
