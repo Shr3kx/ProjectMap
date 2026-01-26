@@ -130,7 +130,9 @@ export default function SignIn({ onSuccess }: SignInProps) {
               className="w-full gap-2"
               disabled={loading}
               onClick={async () => {
-                console.log("[Google Sign-In] Starting Google sign-in process...");
+                console.log(
+                  "[Google Sign-In] Starting Google sign-in process...",
+                );
                 try {
                   await signIn.social({
                     provider: "google",
@@ -140,16 +142,25 @@ export default function SignIn({ onSuccess }: SignInProps) {
                         console.log("[Google Sign-In] Request initiated");
                         setLoading(true);
                       },
-                      onResponse: (response) => {
-                        console.log("[Google Sign-In] Response received:", response);
+                      onResponse: response => {
+                        console.log(
+                          "[Google Sign-In] Response received:",
+                          response,
+                        );
                         setLoading(false);
                       },
-                      onSuccess: (data) => {
-                        console.log("[Google Sign-In] Sign-in successful:", data);
+                      onSuccess: data => {
+                        console.log(
+                          "[Google Sign-In] Sign-in successful:",
+                          data,
+                        );
                         toast.success("Signed in with Google!");
                       },
                       onError: error => {
-                        console.error("[Google Sign-In] Error occurred:", error);
+                        console.error(
+                          "[Google Sign-In] Error occurred:",
+                          error,
+                        );
                         console.error("[Google Sign-In] Error details:", {
                           error: error,
                           errorType: typeof error,
@@ -161,9 +172,13 @@ export default function SignIn({ onSuccess }: SignInProps) {
                     },
                   });
                 } catch (error) {
-                  console.error("[Google Sign-In] Unexpected error caught:", error);
+                  console.error(
+                    "[Google Sign-In] Unexpected error caught:",
+                    error,
+                  );
                   console.error("[Google Sign-In] Error details:", {
-                    message: error instanceof Error ? error.message : String(error),
+                    message:
+                      error instanceof Error ? error.message : String(error),
                     stack: error instanceof Error ? error.stack : undefined,
                     error: error,
                   });
