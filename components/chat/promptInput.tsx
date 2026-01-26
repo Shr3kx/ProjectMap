@@ -51,13 +51,6 @@ function CombinedPromptInput({
     onSubmit();
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit();
-    }
-  };
-
   return (
     <div className="absolute inset-x-0 mx-auto max-w-3xl px-3 md:px-5 bottom-0 pb-4 md:pb-0">
       <div className="border-border/50 bg-input/50 border border-b-0 p-1.5 pb-0 rounded-4xl rounded-b-none backdrop-blur-sm">
@@ -91,7 +84,6 @@ function CombinedPromptInput({
             <PromptInputTextarea
               placeholder="Ask anything..."
               className="min-h-16 pt-3 pl-4 pr-4 text-base leading-[1.3] sm:text-base md:text-base"
-              onKeyDown={handleKeyDown}
             />
 
             <PromptInputActions className="mt-4 flex w-full items-center justify-between gap-2 px-3 pb-3">
