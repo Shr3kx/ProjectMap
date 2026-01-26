@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
-import { ChatInterface } from "@/components/ChatInterface";
-import { ThemeSwitcher } from "@/components/ThemeSwitcher";
-import { InfoModal } from "@/components/InfoModal";
-import { SignInModal } from "@/components/SignInModal";
-import { UserMenu } from "@/components/UserMenu";
+import { ChatInterface } from "@/components/chat/ChatInterface";
+import { ThemeSwitcher } from "@/components/layout/ThemeSwitcher";
+import { InfoModal } from "@/components/modals/InfoModal";
+import { SignInModal } from "@/components/modals/SignInModal";
+import { UserMenu } from "@/components/layout/UserMenu";
 import { Info, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { AppSidebar } from "@/components/app-sidebar";
+import { AppSidebar } from "@/components/navigation/app-sidebar";
 import {
   Breadcrumb,
   BreadcrumbItem,

@@ -4,7 +4,7 @@ import {
   Dialog,
   DialogContent,
 } from "@/components/ui/dialog";
-import SignIn from "./SignIn";
+import SignIn from "@/components/auth/SignIn";
 
 interface SignInModalProps {
   open: boolean;

@@ -17,7 +17,7 @@ import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import toast from "react-hot-toast";
 import type { Id } from "@/convex/_generated/dataModel";
-import { ConfirmDeleteModal } from "@/components/ConfirmDeleteModal";
+import { ConfirmDeleteModal } from "@/components/modals/ConfirmDeleteModal";
 
 interface ChatItemProps {
   conversationId: string;

@@ -4,8 +4,9 @@ import React, { useState, useEffect, useRef } from "react";
 import { Message, Attachment } from "@/types/chat";
 
 import { MessageBubble } from "./MessageBubble";
-import { InputArea } from "./InputArea";
+import { CombinedPromptInput } from "./promptInput";
 import { projectMapConfig } from "@/lib/ai";
+import type { ChatAttachment } from "./chatContainer";
 import toast from "react-hot-toast";
 import {
   Loader2,
@@ -130,7 +131,7 @@ const EmptyState = ({ onPromptClick }: EmptyStateProps) => {
 
       <div className="w-full">
         <div className="flex gap-2 mb-4">
-          {categories.map((category) => (
+          {categories.map(category => (
             <button
               key={category.id}
               onClick={() => setActiveTab(category.id)}
@@ -176,14 +177,11 @@ export function ChatInterface() {
   const [messages, setMessages] = useState<MessageWithMetadata[]>([]);
   const [webSearchEnabled, setWebSearchEnabled] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [inputValue, setInputValue] = useState("");
+  const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const requestStartTime = useRef<number>(0);
-  const inputAreaRef = useRef<{
-    openFileDialog: () => void;
-    setInputValue: (value: string) => void;
-    focusInput: () => void;
-  } | null>(null);
   const { cycleTheme } = useTheme();
 
   // Authentication and chat saving
@@ -217,17 +215,6 @@ export function ChatInterface() {
         },
         description: "Cycle to next theme",
       },
-      {
-        key: "a",
-        ctrlKey: true,
-        shiftKey: true,
-        callback: () => {
-          if (inputAreaRef.current) {
-            inputAreaRef.current.openFileDialog();
-          }
-        },
-        description: "Open file attachment dialog",
-      },
     ],
     enabled: true,
   });
@@ -247,15 +234,17 @@ export function ChatInterface() {
       attachments,
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
     requestStartTime.current = Date.now();
+    setInputValue("");
+    setAttachments([]);
 
     try {
       // Prepare request body
       const requestBody = {
         messages: [
-          ...messages.map((m) => ({
+          ...messages.map(m => ({
             role: m.role,
             content: m.content,
           })),
@@ -266,7 +255,7 @@ export function ChatInterface() {
         ],
         webSearchEnabled:
           webSearchEnabled && projectMapConfig.features.webSearch,
-        attachments: attachments?.map((a) => ({
+        attachments: attachments?.map(a => ({
           type: a.type,
           name: a.name,
           mimeType: a.mimeType,
@@ -310,7 +299,7 @@ export function ChatInterface() {
         }),
       };
 
-      setMessages((prev) => [...prev, assistantMessage]);
+      setMessages(prev => [...prev, assistantMessage]);
 
       // Set loading to false immediately after message is added
       setIsLoading(false);
@@ -330,7 +319,7 @@ export function ChatInterface() {
             role: userMessage.role,
             content: userMessage.content,
             timestamp: userMessage.timestamp,
-            attachments: userMessage.attachments?.map((a) => ({
+            attachments: userMessage.attachments?.map(a => ({
               type: a.type,
               name: a.name,
               size: a.size,
@@ -372,18 +361,15 @@ export function ChatInterface() {
   };
 
   const handleWebSearchToggle = () => {
-    setWebSearchEnabled((prev) => !prev);
+    setWebSearchEnabled(prev => !prev);
   };
 
   const handleEditMessage = (messageId: string, content: string) => {
-    // Set the content in the input area and focus it
-    if (inputAreaRef.current) {
-      inputAreaRef.current.setInputValue(content);
-      inputAreaRef.current.focusInput();
-    }
+    // Set the content in the input area
+    setInputValue(content);
 
     // Remove this message and all messages after it
-    const messageIndex = messages.findIndex((m) => m.id === messageId);
+    const messageIndex = messages.findIndex(m => m.id === messageId);
     if (messageIndex !== -1) {
       setMessages(messages.slice(0, messageIndex));
     }
@@ -391,7 +377,7 @@ export function ChatInterface() {
 
   const handleRegenerateResponse = async (messageId: string) => {
     // Find the message index
-    const messageIndex = messages.findIndex((m) => m.id === messageId);
+    const messageIndex = messages.findIndex(m => m.id === messageId);
     if (messageIndex === -1) return;
 
     // Get the previous user message
@@ -461,7 +447,7 @@ export function ChatInterface() {
         ) : (
           // Messages list
           <div className="max-w-4xl mx-auto px-4 space-y-1">
-            {messages.map((message) => (
+            {messages.map(message => (
               <MessageBubble
                 key={message.id}
                 message={message}
@@ -504,14 +490,55 @@ export function ChatInterface() {
           </div>
         )}
         {/* Input Area */}
-        <InputArea
-          ref={inputAreaRef}
-          onSendMessage={handleSendMessage}
-          webSearchEnabled={webSearchEnabled}
-          onWebSearchToggle={handleWebSearchToggle}
+        <CombinedPromptInput
+          value={inputValue}
+          onValueChange={setInputValue}
+          onSubmit={() => {
+            // Convert ChatAttachment[] to Attachment[]
+            const convertedAttachments: Attachment[] | undefined =
+              attachments.length > 0
+                ? attachments.map(att => ({
+                    type: att.kind === "image" ? "image" : "file",
+                    name: att.name,
+                    size: att.size,
+                    data: att.dataUrl || "",
+                    mimeType: att.type,
+                    preview: att.dataUrl,
+                  }))
+                : undefined;
+            handleSendMessage(inputValue, convertedAttachments);
+          }}
+          attachments={attachments}
+          onRemoveAttachment={(id: string) => {
+            setAttachments(prev => prev.filter(att => att.id !== id));
+          }}
+          onFilesSelected={(files: File[]) => {
+            files.forEach(file => {
+              const id = `att-${Date.now()}-${Math.random()}`;
+              const isImage = file.type.startsWith("image/");
+              const reader = new FileReader();
+              
+              reader.onload = e => {
+                const dataUrl = e.target?.result as string;
+                setAttachments(prev => [
+                  ...prev,
+                  {
+                    id,
+                    name: file.name,
+                    type: file.type,
+                    size: file.size,
+                    kind: isImage ? "image" : "file",
+                    dataUrl,
+                  },
+                ]);
+              };
+              
+              reader.readAsDataURL(file);
+            });
+          }}
+          searchEnabled={webSearchEnabled}
+          onToggleSearch={handleWebSearchToggle}
           isLoading={isLoading}
-          hasMessages={messages.length > 0}
-          onExportFullConversation={handleExportFullConversation}
         />
       </div>
     </div>

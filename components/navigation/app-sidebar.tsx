@@ -34,7 +34,7 @@ import { Input } from "@/components/ui/input";
 import { useSession } from "@/lib/auth-client";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { ChatItem } from "./ChatItem";
+import { ChatItem } from "@/components/chat/ChatItem";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,7 +43,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import toast from "react-hot-toast";
 import type { Id } from "@/convex/_generated/dataModel";
-import { ConfirmDeleteModal } from "@/components/ConfirmDeleteModal";
+import { ConfirmDeleteModal } from "@/components/modals/ConfirmDeleteModal";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [pinnedOpen, setPinnedOpen] = React.useState(true);
