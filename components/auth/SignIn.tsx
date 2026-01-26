@@ -130,26 +130,43 @@ export default function SignIn({ onSuccess }: SignInProps) {
               className="w-full gap-2"
               disabled={loading}
               onClick={async () => {
+                console.log("[Google Sign-In] Starting Google sign-in process...");
                 try {
                   await signIn.social({
                     provider: "google",
                     callbackURL: "/",
                     fetchOptions: {
                       onRequest: () => {
+                        console.log("[Google Sign-In] Request initiated");
                         setLoading(true);
                       },
-                      onResponse: () => {
+                      onResponse: (response) => {
+                        console.log("[Google Sign-In] Response received:", response);
                         setLoading(false);
                       },
-                      onSuccess: () => {
+                      onSuccess: (data) => {
+                        console.log("[Google Sign-In] Sign-in successful:", data);
                         toast.success("Signed in with Google!");
                       },
                       onError: error => {
+                        console.error("[Google Sign-In] Error occurred:", error);
+                        console.error("[Google Sign-In] Error details:", {
+                          error: error,
+                          errorType: typeof error,
+                          errorString: String(error),
+                          errorJSON: JSON.stringify(error, null, 2),
+                        });
                         toast.error("Failed to sign in with Google");
                       },
                     },
                   });
                 } catch (error) {
+                  console.error("[Google Sign-In] Unexpected error caught:", error);
+                  console.error("[Google Sign-In] Error details:", {
+                    message: error instanceof Error ? error.message : String(error),
+                    stack: error instanceof Error ? error.stack : undefined,
+                    error: error,
+                  });
                   toast.error("An unexpected error occurred");
                   setLoading(false);
                 }
