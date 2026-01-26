@@ -3,7 +3,6 @@ import { convexBetterAuthNextJs } from "@convex-dev/better-auth/nextjs";
 // Get the site URL with fallback for server-side
 const getSiteUrl = () => {
   return (
-    process.env.NEXT_PUBLIC_CONVEX_SITE_URL ||
     process.env.NEXT_PUBLIC_SITE_URL ||
     (process.env.VERCEL_URL
       ? `https://${process.env.VERCEL_URL}`
