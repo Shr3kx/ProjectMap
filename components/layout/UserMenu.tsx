@@ -42,7 +42,9 @@ export function UserMenu({ user }: UserMenuProps) {
             router.refresh();
           },
           onError: (err: unknown) => {
-            toast.error(err instanceof Error ? err.message : "Failed to sign out");
+            toast.error(
+              err instanceof Error ? err.message : "Failed to sign out",
+            );
             setIsSigningOut(false);
           },
         },
@@ -82,7 +84,6 @@ export function UserMenu({ user }: UserMenuProps) {
             </p>
           </div>
         </DropdownMenuLabel>
-        <DropdownMenuSeparator />
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={handleSignOut}
