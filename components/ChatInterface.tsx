@@ -130,7 +130,7 @@ const EmptyState = ({ onPromptClick }: EmptyStateProps) => {
 
       <div className="w-full">
         <div className="flex gap-2 mb-4">
-          {categories.map(category => (
+          {categories.map((category) => (
             <button
               key={category.id}
               onClick={() => setActiveTab(category.id)}
@@ -173,7 +173,6 @@ const EmptyState = ({ onPromptClick }: EmptyStateProps) => {
 };
 
 export function ChatInterface() {
-
   const [messages, setMessages] = useState<MessageWithMetadata[]>([]);
   const [webSearchEnabled, setWebSearchEnabled] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -186,7 +185,7 @@ export function ChatInterface() {
     focusInput: () => void;
   } | null>(null);
   const { cycleTheme } = useTheme();
-  
+
   // Authentication and chat saving
   const { data: session } = useSession();
   const saveMessage = useMutation(api.chats.saveMessage);
@@ -248,7 +247,7 @@ export function ChatInterface() {
       attachments,
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
     requestStartTime.current = Date.now();
 
@@ -256,7 +255,7 @@ export function ChatInterface() {
       // Prepare request body
       const requestBody = {
         messages: [
-          ...messages.map(m => ({
+          ...messages.map((m) => ({
             role: m.role,
             content: m.content,
           })),
@@ -267,7 +266,7 @@ export function ChatInterface() {
         ],
         webSearchEnabled:
           webSearchEnabled && projectMapConfig.features.webSearch,
-        attachments: attachments?.map(a => ({
+        attachments: attachments?.map((a) => ({
           type: a.type,
           name: a.name,
           mimeType: a.mimeType,
@@ -311,8 +310,8 @@ export function ChatInterface() {
         }),
       };
 
-      setMessages(prev => [...prev, assistantMessage]);
-      
+      setMessages((prev) => [...prev, assistantMessage]);
+
       // Set loading to false immediately after message is added
       setIsLoading(false);
 
@@ -323,7 +322,7 @@ export function ChatInterface() {
         if (!conversationIdRef.current) {
           conversationIdRef.current = `conv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         }
-        
+
         try {
           // Save user message
           const userMessageId = await saveMessage({
@@ -331,7 +330,7 @@ export function ChatInterface() {
             role: userMessage.role,
             content: userMessage.content,
             timestamp: userMessage.timestamp,
-            attachments: userMessage.attachments?.map(a => ({
+            attachments: userMessage.attachments?.map((a) => ({
               type: a.type,
               name: a.name,
               size: a.size,
@@ -350,8 +349,6 @@ export function ChatInterface() {
             modelName: assistantMessage.modelName,
             timeTaken: assistantMessage.timeTaken,
           });
-
-        
         } catch (saveError) {
           // Log error for debugging
           console.error("Failed to save chat:", saveError);
@@ -375,7 +372,7 @@ export function ChatInterface() {
   };
 
   const handleWebSearchToggle = () => {
-    setWebSearchEnabled(prev => !prev);
+    setWebSearchEnabled((prev) => !prev);
   };
 
   const handleEditMessage = (messageId: string, content: string) => {
@@ -386,7 +383,7 @@ export function ChatInterface() {
     }
 
     // Remove this message and all messages after it
-    const messageIndex = messages.findIndex(m => m.id === messageId);
+    const messageIndex = messages.findIndex((m) => m.id === messageId);
     if (messageIndex !== -1) {
       setMessages(messages.slice(0, messageIndex));
     }
@@ -394,7 +391,7 @@ export function ChatInterface() {
 
   const handleRegenerateResponse = async (messageId: string) => {
     // Find the message index
-    const messageIndex = messages.findIndex(m => m.id === messageId);
+    const messageIndex = messages.findIndex((m) => m.id === messageId);
     if (messageIndex === -1) return;
 
     // Get the previous user message
@@ -454,7 +451,7 @@ export function ChatInterface() {
       {/* Messages Area */}
       <div
         ref={messagesContainerRef}
-        className={`flex-1 overflow-y-auto ${
+        className={`flex-1 overflow-y-auto flex-col ${
           messages.length === 0 ? "flex items-center justify-center" : "pt-4"
         } pb-60`}
       >
@@ -464,7 +461,7 @@ export function ChatInterface() {
         ) : (
           // Messages list
           <div className="max-w-4xl mx-auto px-4 space-y-1">
-            {messages.map(message => (
+            {messages.map((message) => (
               <MessageBubble
                 key={message.id}
                 message={message}
@@ -506,18 +503,17 @@ export function ChatInterface() {
             <div ref={messagesEndRef} />
           </div>
         )}
+        {/* Input Area */}
+        <InputArea
+          ref={inputAreaRef}
+          onSendMessage={handleSendMessage}
+          webSearchEnabled={webSearchEnabled}
+          onWebSearchToggle={handleWebSearchToggle}
+          isLoading={isLoading}
+          hasMessages={messages.length > 0}
+          onExportFullConversation={handleExportFullConversation}
+        />
       </div>
-
-      {/* Input Area */}
-      <InputArea
-        ref={inputAreaRef}
-        onSendMessage={handleSendMessage}
-        webSearchEnabled={webSearchEnabled}
-        onWebSearchToggle={handleWebSearchToggle}
-        isLoading={isLoading}
-        hasMessages={messages.length > 0}
-        onExportFullConversation={handleExportFullConversation}
-      />
     </div>
   );
 }

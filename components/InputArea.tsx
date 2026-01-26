@@ -145,12 +145,12 @@ export const InputArea = forwardRef<InputAreaRef, InputAreaProps>(
 
     return (
       <div
-        className={`fixed bottom-0 left-0 right-0 z-10 transition-all duration-500 ${
+        className={`absolute bottom-0 inset-x-0 left-1/2 -translate-x-1/2 z-10 min-w-2xl max-w-2xl transition-all duration-500 ${
           hasMessages ? "p-4" : ""
         }`}
       >
         <div
-          className={`max-w-[700px] mx-auto transition-all duration-500 ${
+          className={`mx-auto transition-all duration-500 ${
             hasMessages ? "" : "pb-8"
           }`}
         >
@@ -161,7 +161,7 @@ export const InputArea = forwardRef<InputAreaRef, InputAreaProps>(
               backdropFilter: "blur(10px)",
               backgroundColor: "rgba(255, 255, 255, 0.02)",
               border: "1px solid rgba(255, 255, 255, 0.05)",
-              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
+              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
             }}
           >
             {/* Inner Glass Container */}
@@ -251,40 +251,40 @@ export const InputArea = forwardRef<InputAreaRef, InputAreaProps>(
               </div>
               {/* Controls Bar */}
               <div className="flex items-center justify-end gap-1.5 px-3 pb-3 pt-1">
-                  {/* Web Search Toggle */}
-                  {canUseWebSearch && (
-                    <button
-                      onClick={onWebSearchToggle}
-                      disabled={isLoading}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
-                        webSearchEnabled
-                          ? "bg-primary/20 text-primary border border-primary/30"
-                          : "bg-white/5 text-muted-foreground border border-white/10 hover:bg-white/10"
-                      }`}
-                      aria-label={`Web search ${webSearchEnabled ? "enabled" : "disabled"}`}
-                    >
-                      <Globe size={14} />
-                      <span>Search</span>
-                    </button>
-                  )}
-
-                  {/* File Attachment */}
+                {/* Web Search Toggle */}
+                {canUseWebSearch && (
                   <button
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isLoading || attachments.length > 0}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 text-muted-foreground border border-white/10 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium"
-                    aria-label="Attach file"
+                    onClick={onWebSearchToggle}
+                    disabled={isLoading}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
+                      webSearchEnabled
+                        ? "bg-primary/20 text-primary border border-primary/30"
+                        : "bg-white/5 text-muted-foreground border border-white/10 hover:bg-white/10"
+                    }`}
+                    aria-label={`Web search ${webSearchEnabled ? "enabled" : "disabled"}`}
                   >
-                    <Paperclip size={14} />
-                    <span>Attach</span>
+                    <Globe size={14} />
+                    <span>Search</span>
                   </button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    onChange={handleFileSelect}
-                    className="hidden"
-                    accept="image/*,.pdf,.txt,.doc,.docx"
-                  />
+                )}
+
+                {/* File Attachment */}
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isLoading || attachments.length > 0}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 text-muted-foreground border border-white/10 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium"
+                  aria-label="Attach file"
+                >
+                  <Paperclip size={14} />
+                  <span>Attach</span>
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  accept="image/*,.pdf,.txt,.doc,.docx"
+                />
               </div>
             </div>
           </div>
