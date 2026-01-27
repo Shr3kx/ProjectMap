@@ -50,10 +50,7 @@ export function UserMenu({ user }: UserMenuProps) {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          disabled
-          variant="ghost"
-        >
+        <DropdownMenuItem disabled>
           <LogOut className="mr-2 h-4 w-4" />
           <span>Sign out unavailable</span>
         </DropdownMenuItem>
