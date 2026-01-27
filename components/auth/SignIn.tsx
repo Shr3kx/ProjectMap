@@ -82,7 +82,7 @@ export default function SignIn({ onSuccess }: SignInProps) {
           </div>
           <Button
             type="submit"
-            className="w-full"
+            className="w-full skeuomorphic-button"
             disabled={loading}
             onClick={async () => {
               try {
@@ -113,11 +113,7 @@ export default function SignIn({ onSuccess }: SignInProps) {
               }
             }}
           >
-            {loading ? (
-              <Loader2 size={16} className="animate-spin" />
-            ) : (
-              <p>Login</p>
-            )}
+            {loading ? <Loader2 size={16} className="" /> : <p>Login</p>}
           </Button>
           <div
             className={cn(
@@ -152,14 +148,14 @@ export default function SignIn({ onSuccess }: SignInProps) {
                       onSuccess: data => {
                         console.log(
                           "[Google Sign-In] Sign-in successful:",
-                          data,
+                          JSON.stringify(data),
                         );
                         toast.success("Signed in with Google!");
                       },
                       onError: error => {
                         console.error(
                           "[Google Sign-In] Error occurred:",
-                          error,
+                          JSON.stringify(error),
                         );
                         console.error("[Google Sign-In] Error details:", {
                           error: error,

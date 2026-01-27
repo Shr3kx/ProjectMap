@@ -59,7 +59,7 @@ function CombinedPromptInput({
           value={value}
           onValueChange={onValueChange}
           onSubmit={handleSubmit}
-          className="border-input bg-popover/50 relative z-10 w-full rounded-2xl rounded-b-none border border-b-0 p-0 pt-1 shadow-xs"
+          className="border-input bg-popover/50 relative z-10 w-full rounded-3xl rounded-b-none border border-b-0 p-0 pt-1 shadow-xs"
         >
           <div className="flex flex-col">
             {attachments.length > 0 && (
@@ -86,7 +86,7 @@ function CombinedPromptInput({
               className="min-h-16 pt-3 pl-4 pr-4 text-base leading-[1.3] sm:text-base md:text-base"
             />
 
-            <PromptInputActions className="mt-4 flex w-full items-center justify-between gap-2 px-3 pb-3">
+            <PromptInputActions className="mt-4 flex w-full items-center justify-between gap-2 px-3 pb-5">
               <div className="flex items-center gap-2">
                 <PromptInputAction tooltip="Add attachment / action">
                   <Button
@@ -122,7 +122,7 @@ function CombinedPromptInput({
                   <Button
                     variant="outline"
                     size="icon"
-                    className="size-9 rounded-full"
+                    className="size-9 rounded-full hover:text-white"
                     type="button"
                   >
                     <HugeiconsIcon icon={Mic} strokeWidth={2} />
