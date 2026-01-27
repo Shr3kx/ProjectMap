@@ -9,11 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogOut, User, Loader2 } from "lucide-react";
-import { signOut } from "@/lib/auth-client";
-import { useRouter } from "next/navigation";
-import toast from "react-hot-toast";
-import { useState } from "react";
+import { LogOut } from "lucide-react";
 
 interface UserMenuProps {
   user: {
@@ -24,37 +20,6 @@ interface UserMenuProps {
 }
 
 export function UserMenu({ user }: UserMenuProps) {
-  const router = useRouter();
-  const [isSigningOut, setIsSigningOut] = useState(false);
-
-  const handleSignOut = async () => {
-    setIsSigningOut(true);
-    try {
-      await signOut({
-        fetchOptions: {
-          onRequest: () => {
-            setIsSigningOut(true);
-          },
-          onSuccess: () => {
-            toast.success("Signed out successfully");
-            setIsSigningOut(false);
-            router.push("/");
-            router.refresh();
-          },
-          onError: (err: unknown) => {
-            toast.error(
-              err instanceof Error ? err.message : "Failed to sign out",
-            );
-            setIsSigningOut(false);
-          },
-        },
-      });
-    } catch (error) {
-      toast.error("An error occurred while signing out");
-      setIsSigningOut(false);
-    }
-  };
-
   const getInitials = (name: string) => {
     return name
       .split(" ")
@@ -86,16 +51,11 @@ export function UserMenu({ user }: UserMenuProps) {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          onClick={handleSignOut}
-          disabled={isSigningOut}
-          variant="destructive"
+          disabled
+          variant="ghost"
         >
-          {isSigningOut ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <LogOut className="mr-2 h-4 w-4" />
-          )}
-          <span>{isSigningOut ? "Signing out..." : "Log out"}</span>
+          <LogOut className="mr-2 h-4 w-4" />
+          <span>Sign out unavailable</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

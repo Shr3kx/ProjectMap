@@ -1,5 +1,4 @@
 "use client";
-
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,14 +10,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { signIn } from "@/lib/auth-client";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
-
+import supabase from "../../app/api/client";
 interface SignInProps {
   onSuccess?: () => void;
 }
@@ -28,8 +25,29 @@ export default function SignIn({ onSuccess }: SignInProps) {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const router = useRouter();
+  const [session, setSession] = useState(null);
 
+  const signInWithGoogle = async () => {
+    try {
+      setLoading(true);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+      });
+
+      if (error) {
+        toast.error("Failed to sign in with Google.");
+        // eslint-disable-next-line no-console
+        console.error(error);
+      }
+    } catch (err) {
+      toast.error("Unexpected error while signing in with Google.");
+      // eslint-disable-next-line no-console
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+ 
   return (
     <Card className="max-w-md">
       <CardHeader>
@@ -85,32 +103,8 @@ export default function SignIn({ onSuccess }: SignInProps) {
             className="w-full skeuomorphic-button"
             disabled={loading}
             onClick={async () => {
-              try {
-                await signIn.email({
-                  email,
-                  password,
-                  rememberMe,
-                  fetchOptions: {
-                    onRequest: () => {
-                      setLoading(true);
-                    },
-                    onResponse: () => {
-                      setLoading(false);
-                    },
-                    onSuccess: () => {
-                      toast.success("Signed in successfully!");
-                      onSuccess?.();
-                      router.push("/");
-                    },
-                    onError: error => {
-                      toast.error("Failed to sign in");
-                    },
-                  },
-                });
-              } catch (error) {
-                toast.error("An unexpected error occurred");
-                setLoading(false);
-              }
+              toast("Authentication is currently disabled.");
+              setLoading(false);
             }}
           >
             {loading ? <Loader2 size={16} className="" /> : <p>Login</p>}
@@ -125,63 +119,7 @@ export default function SignIn({ onSuccess }: SignInProps) {
               variant="outline"
               className="w-full gap-2"
               disabled={loading}
-              onClick={async () => {
-                console.log(
-                  "[Google Sign-In] Starting Google sign-in process...",
-                );
-                try {
-                  await signIn.social({
-                    provider: "google",
-                    callbackURL: "/",
-                    fetchOptions: {
-                      onRequest: () => {
-                        console.log("[Google Sign-In] Request initiated");
-                        setLoading(true);
-                      },
-                      onResponse: response => {
-                        console.log(
-                          "[Google Sign-In] Response received:",
-                          response,
-                        );
-                        setLoading(false);
-                      },
-                      onSuccess: data => {
-                        console.log(
-                          "[Google Sign-In] Sign-in successful:",
-                          JSON.stringify(data),
-                        );
-                        toast.success("Signed in with Google!");
-                      },
-                      onError: error => {
-                        console.error(
-                          "[Google Sign-In] Error occurred:",
-                          JSON.stringify(error),
-                        );
-                        console.error("[Google Sign-In] Error details:", {
-                          error: error,
-                          errorType: typeof error,
-                          errorString: String(error),
-                          errorJSON: JSON.stringify(error, null, 2),
-                        });
-                        toast.error("Failed to sign in with Google");
-                      },
-                    },
-                  });
-                } catch (error) {
-                  console.error(
-                    "[Google Sign-In] Unexpected error caught:",
-                    error,
-                  );
-                  console.error("[Google Sign-In] Error details:", {
-                    message:
-                      error instanceof Error ? error.message : String(error),
-                    stack: error instanceof Error ? error.stack : undefined,
-                    error: error,
-                  });
-                  toast.error("An unexpected error occurred");
-                  setLoading(false);
-                }
-              }}
+              onClick={signInWithGoogle}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -213,29 +151,7 @@ export default function SignIn({ onSuccess }: SignInProps) {
               className="w-full gap-2"
               disabled={loading}
               onClick={async () => {
-                try {
-                  await signIn.social({
-                    provider: "github",
-                    callbackURL: "/dashboard",
-                    fetchOptions: {
-                      onRequest: () => {
-                        setLoading(true);
-                      },
-                      onResponse: () => {
-                        setLoading(false);
-                      },
-                      onSuccess: () => {
-                        toast.success("Signed in with GitHub!");
-                      },
-                      onError: error => {
-                        toast.error("Failed to sign in with GitHub");
-                      },
-                    },
-                  });
-                } catch (error) {
-                  toast.error("An unexpected error occurred");
-                  setLoading(false);
-                }
+                toast("GitHub sign-in is disabled while auth is offline.");
               }}
             >
               <svg

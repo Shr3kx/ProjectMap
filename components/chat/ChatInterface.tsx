@@ -23,9 +23,6 @@ import {
 } from "@/utils/pdfExport";
 import { parseRoadmapFromContent } from "@/utils/parseRoadmap";
 import { useTheme } from "@/contexts/ThemeContext";
-import { useSession } from "@/lib/auth-client";
-import { useMutation } from "convex/react";
-import { api } from "@/convex/_generated/api";
 
 interface MessageWithMetadata extends Message {
   modelName?: string;
@@ -184,25 +181,10 @@ export function ChatInterface() {
   const requestStartTime = useRef<number>(0);
   const { cycleTheme } = useTheme();
 
-  // Authentication and chat saving
-  const { data: session } = useSession();
-  const saveMessage = useMutation(api.chats.saveMessage);
-  const conversationIdRef = useRef<string | null>(null);
-
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
-  // Generate conversation ID when user logs in (will be used when first message is sent)
-  useEffect(() => {
-    if (session?.user && !conversationIdRef.current) {
-      conversationIdRef.current = `conv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    } else if (!session?.user) {
-      // Clear conversation ID when user logs out
-      conversationIdRef.current = null;
-    }
-  }, [session]);
 
   // Keyboard shortcuts
   useKeyboardShortcuts({
@@ -304,52 +286,6 @@ export function ChatInterface() {
       // Set loading to false immediately after message is added
       setIsLoading(false);
 
-      // Save messages to backend if user is logged in (silently in background)
-      // This happens after loading is set to false so it doesn't affect the UI
-      if (session?.user) {
-        // Ensure conversationId is set
-        if (!conversationIdRef.current) {
-          conversationIdRef.current = `conv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        }
-
-        try {
-          // Save user message
-          const userMessageId = await saveMessage({
-            conversationId: conversationIdRef.current,
-            role: userMessage.role,
-            content: userMessage.content,
-            timestamp: userMessage.timestamp,
-            attachments: userMessage.attachments?.map(a => ({
-              type: a.type,
-              name: a.name,
-              size: a.size,
-              data: a.data,
-              mimeType: a.mimeType,
-              preview: a.preview,
-            })),
-          });
-
-          // Save assistant message (use raw content when roadmap was parsed)
-          const assistantMessageId = await saveMessage({
-            conversationId: conversationIdRef.current,
-            role: assistantMessage.role,
-            content: assistantMessage.rawContent ?? assistantMessage.content,
-            timestamp: assistantMessage.timestamp,
-            modelName: assistantMessage.modelName,
-            timeTaken: assistantMessage.timeTaken,
-          });
-        } catch (saveError) {
-          // Log error for debugging
-          console.error("Failed to save chat:", saveError);
-          if (saveError instanceof Error) {
-            console.error("Error message:", saveError.message);
-            console.error("Error stack:", saveError.stack);
-          }
-        }
-      } else {
-        // Log when user is not logged in (for debugging)
-        console.log("Chat not saved: User is not logged in");
-      }
     } catch (error) {
       console.error("Chat error:", error);
       toast.error(

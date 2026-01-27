@@ -3,7 +3,6 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { Toaster } from "react-hot-toast";
-import { ConvexClientProvider } from "./ConvexClientProvider";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -29,9 +28,8 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} antialiased`}>
         <ThemeProvider>
-          <ConvexClientProvider>
-            {children}
-            <Toaster
+          {children}
+          <Toaster
             position="bottom-right"
             toastOptions={{
               duration: 4000,
@@ -54,7 +52,6 @@ export default function RootLayout({
               },
             }}
           />
-          </ConvexClientProvider>
         </ThemeProvider>
       </body>
     </html>
