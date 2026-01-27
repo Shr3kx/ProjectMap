@@ -275,7 +275,6 @@ function Sidebar({
                 opacity: 0.8,
               }}
               transition={drawerTransition}
-              {...props}
             >
               <div
                 data-sidebar="sidebar"
