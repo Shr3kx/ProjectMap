@@ -13,7 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LogOut, User as UserIcon, Mail } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import supabase from "@/app/api/client";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { useState } from "react";
 
 interface LogoutModalProps {
@@ -105,7 +105,7 @@ export function LogoutModal({ open, onOpenChange, user }: LogoutModalProps) {
           <div className="flex flex-col gap-2">
             <Button
               variant="outline"
-              className="w-full justify-start gap-2 h-11"
+              // className="w-full justify-start gap-2 h-11"
               onClick={handleSignOut}
               disabled={isLoading}
               aria-label="Sign out of your account"

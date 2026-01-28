@@ -14,9 +14,9 @@ export function useAuth() {
         data: { session },
       } = await supabase.auth.getSession();
       setUser(session?.user ?? null);
-      if (session?.user) {
-        console.log("userData", JSON.stringify(session.user));
-      }
+      // if (session?.user) {
+      //   console.log("userData", JSON.stringify(session.user));
+      // }
       setLoading(false);
     };
 

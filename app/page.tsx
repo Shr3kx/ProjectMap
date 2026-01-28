@@ -111,7 +111,7 @@ export default function Home() {
                     onClick={() => setIsLogoutOpen(true)}
                   >
                     <Avatar
-                      className="h-6 w-6 shrink-0 border-2 ring-2 ring-background"
+                      className="h-6 w-6 shrink-0"
                       style={{ borderColor: bg }}
                     >
                       <AvatarImage

@@ -12,7 +12,7 @@ import {
   FileDown,
   Map,
 } from "lucide-react";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { RoadmapModal } from "@/components/modals/RoadmapModal";
 

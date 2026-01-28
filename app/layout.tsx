@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/contexts/ThemeContext";
-import { Toaster } from "react-hot-toast";
+import { Toaster } from "sonner";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -28,30 +28,16 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} antialiased`}>
         <ThemeProvider>
-          {children}
-          <Toaster
-            position="bottom-right"
-            toastOptions={{
-              duration: 4000,
-              style: {
-                background: "hsl(var(--card))",
-                color: "hsl(var(--card-foreground))",
-                border: "1px solid hsl(var(--border))",
-              },
-              success: {
-                iconTheme: {
-                  primary: "hsl(var(--primary))",
-                  secondary: "hsl(var(--primary-foreground))",
-                },
-              },
-              error: {
-                iconTheme: {
-                  primary: "hsl(var(--destructive))",
-                  secondary: "hsl(var(--destructive-foreground))",
-                },
-              },
-            }}
-          />
+   
+            {children}
+            <Toaster
+              position="bottom-right"
+              duration={4000}
+              theme="system"
+              richColors
+              closeButton
+            />
+         
         </ThemeProvider>
       </body>
     </html>

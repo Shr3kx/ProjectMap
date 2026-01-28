@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Message, Attachment } from "@/types/chat";
 
 import { MessageBubble } from "./MessageBubble";
 import { CombinedPromptInput } from "./promptInput";
 import { projectMapConfig } from "@/lib/ai";
 import type { ChatAttachment } from "./chatContainer";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import {
   Loader2,
   Sparkles,
@@ -23,6 +23,7 @@ import {
 } from "@/utils/pdfExport";
 import { parseRoadmapFromContent } from "@/utils/parseRoadmap";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useAuth } from "@/hooks/useAuth";
 
 interface MessageWithMetadata extends Message {
   modelName?: string;
@@ -176,10 +177,12 @@ export function ChatInterface() {
   const [isLoading, setIsLoading] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
+  const [chatId, setChatId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const requestStartTime = useRef<number>(0);
   const { cycleTheme } = useTheme();
+  const { user } = useAuth();
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -200,6 +203,53 @@ export function ChatInterface() {
     ],
     enabled: true,
   });
+
+  const persistChat = useCallback(
+    async (allMessages: MessageWithMetadata[]) => {
+      if (!user) return;
+
+      try {
+        const payload = {
+          messages: allMessages.map(({ id, ...rest }) => rest),
+        };
+
+        if (!chatId) {
+          const response = await fetch("/api/chats", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          });
+
+          if (!response.ok) {
+            console.error("Failed to create chat:", await response.text());
+            return;
+          }
+
+          const data = await response.json();
+          if (data?.chat?.id) {
+            setChatId(data.chat.id as string);
+          }
+        } else {
+          const response = await fetch(`/api/chats/${chatId}`, {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          });
+
+          if (!response.ok) {
+            console.error("Failed to update chat:", await response.text());
+          }
+        }
+      } catch (error) {
+        console.error("Error persisting chat:", error);
+      }
+    },
+    [chatId, user],
+  );
 
   const handleSendMessage = async (
     content: string,
@@ -281,7 +331,11 @@ export function ChatInterface() {
         }),
       };
 
-      setMessages(prev => [...prev, assistantMessage]);
+      const updatedMessages = [...messages, assistantMessage];
+      setMessages(updatedMessages);
+
+      // Persist chat silently in the background for authenticated users
+      void persistChat(updatedMessages);
 
       // Set loading to false immediately after message is added
       setIsLoading(false);

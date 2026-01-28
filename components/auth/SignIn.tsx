@@ -14,7 +14,7 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import supabase from "../../app/api/client";
 interface SignInProps {
   onSuccess?: () => void;
@@ -36,18 +36,18 @@ export default function SignIn({ onSuccess }: SignInProps) {
 
       if (error) {
         toast.error("Failed to sign in with Google.");
-        // eslint-disable-next-line no-console
+
         console.error(error);
       }
     } catch (err) {
       toast.error("Unexpected error while signing in with Google.");
-      // eslint-disable-next-line no-console
+
       console.error(err);
     } finally {
       setLoading(false);
     }
   };
- 
+
   return (
     <Card className="max-w-md">
       <CardHeader>
@@ -103,7 +103,7 @@ export default function SignIn({ onSuccess }: SignInProps) {
             className="w-full skeuomorphic-button"
             disabled={loading}
             onClick={async () => {
-              toast("Authentication is currently disabled.");
+              toast.info("Authentication is currently disabled.");
               setLoading(false);
             }}
           >
@@ -151,7 +151,7 @@ export default function SignIn({ onSuccess }: SignInProps) {
               className="w-full gap-2"
               disabled={loading}
               onClick={async () => {
-                toast("GitHub sign-in is disabled while auth is offline.");
+                toast.info("GitHub sign-in is disabled while auth is offline.");
               }}
             >
               <svg
