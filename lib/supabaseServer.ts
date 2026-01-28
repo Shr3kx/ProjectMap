@@ -6,4 +6,3 @@ export async function createSupabaseServerClient() {
     cookies: cookies,
   });
 }
-
