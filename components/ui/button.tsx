@@ -20,6 +20,7 @@ const buttonVariants = cva(
           "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
         signIn:
           "rounded-4xl hover:bg-primary/90 hover:text-secondary cursor-pointer transition",
+        tabs: "flex items-center justify-center bg-card hover:bg-accent border border-border rounded-full transition-colors shadow-sm",
 
         link: "text-primary underline-offset-4 hover:underline",
       },

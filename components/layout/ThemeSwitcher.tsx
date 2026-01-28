@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Palette, Check, ChevronDown } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Theme } from "@/types/theme";
+import { Button } from "../ui/button";
 
 export function ThemeSwitcher() {
   const [isOpen, setIsOpen] = useState(false);
@@ -45,14 +46,16 @@ export function ThemeSwitcher() {
   return (
     <div className="relative" ref={dropdownRef}>
       {/* Theme Button */}
-      <button
+      <Button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-8 h-8 flex items-center justify-center bg-card hover:bg-accent border border-border rounded-full transition-colors shadow-sm"
+        variant="tabs"
+        size="sm"
+        className="cursor-pointer"
         aria-label="Select theme"
         title={`Current: ${themes[currentTheme].name}`}
       >
         <Palette size={16} className="text-foreground" />
-      </button>
+      </Button>
 
       {/* Dropdown Menu */}
       {isOpen && (
@@ -65,19 +68,19 @@ export function ThemeSwitcher() {
             </p>
           </div>
 
-          <div className="max-h-[400px] overflow-y-auto">
+          <div className="max-h-100 overflow-y-auto">
             {/* Light Themes */}
             {lightThemes.length > 0 && (
               <div className="mb-3">
                 <p className="text-xs font-semibold text-muted-foreground px-3 py-1 mb-1">
                   Light Themes ({lightThemes.length})
                 </p>
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-1 ">
                   {lightThemes.map(([key, config]) => (
                     <button
                       key={key}
                       onClick={() => handleThemeSelect(key as Theme)}
-                      className={`flex items-center justify-between px-3 py-2 rounded-lg text-left transition-all duration-200 ${
+                      className={`flex items-center justify-between px-3 py-2 rounded-lg text-left transition-all duration-200  ${
                         currentTheme === key
                           ? "bg-primary/20 border border-primary/50"
                           : "bg-transparent hover:bg-accent border border-transparent"

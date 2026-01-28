@@ -104,7 +104,7 @@ export default function Home() {
                 const { bg, text } = getUserAvatarColor(user);
                 return (
                   <Button
-                    variant="outline"
+                    variant="tabs"
                     size="sm"
                     className="gap-2 cursor-pointer"
                     aria-label="Account"
@@ -132,7 +132,7 @@ export default function Home() {
               })()
             ) : (
               <Button
-                variant="outline"
+                variant="tabs"
                 size="sm"
                 className="gap-2  cursor-pointer"
                 aria-label="Sign in"
@@ -144,14 +144,16 @@ export default function Home() {
             )}
 
             {/* Info Button */}
-            <button
+            <Button
               onClick={() => setIsInfoOpen(true)}
-              className="w-8 h-8 flex items-center justify-center bg-card hover:bg-accent border border-border rounded-full transition-colors shadow-sm"
+              variant="tabs"
+              className=" cursor-pointer"
+              size="sm"
               aria-label="About ProjectMap"
               title="About ProjectMap"
             >
               <Info size={16} className="text-foreground" />
-            </button>
+            </Button>
 
             {/* Theme Switcher */}
             <ThemeSwitcher />

@@ -137,7 +137,10 @@ export function ProjectMap({ userContext, steps }: ProjectMapProps) {
     if (steps) {
       return generateRoadmapFromSteps(steps);
     }
-    return generateRoadmapFromContext(userContext);
+    if (userContext) {
+      return generateRoadmapFromContext(userContext);
+    }
+    return { nodes: [], edges: [] };
   }, [userContext, steps]);
 
   React.useEffect(() => {
@@ -184,17 +187,8 @@ export function ProjectMap({ userContext, steps }: ProjectMapProps) {
         minZoom={0.3}
         maxZoom={2}
       >
-        <Background color="#e5e7eb" gap={20} size={1} variant="dots" />
-        <Controls
-          showInteractive={false}
-          style={{
-            button: {
-              backgroundColor: "#fff",
-              border: "1px solid #ddd",
-              color: "#333",
-            },
-          }}
-        />
+        <Background color="#e5e7eb" gap={20} size={1} />
+        <Controls showInteractive={false} />
       </ReactFlow>
     </div>
   );
