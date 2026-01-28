@@ -1,340 +1,252 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
-import { motion, useMotionValue, PanInfo } from "framer-motion";
-import type { RoadmapNodeData } from "@/types/roadmap";
+import React, { useMemo, useCallback, useEffect, useRef } from "react";
+import ReactFlow, {
+  Node,
+  Edge,
+  Background,
+  Controls,
+  useNodesState,
+  useEdgesState,
+  MarkerType,
+  Handle,
+  Position,
+  NodeProps,
+  ReactFlowInstance,
+  ReactFlowProvider,
+} from "reactflow";
+import "reactflow/dist/style.css";
+import type { RoadmapNodeData, RoadmapNodeStatus } from "@/types/roadmap";
+import { cn } from "@/lib/utils";
 
-const STATUS_COLORS: Record<RoadmapNodeData["status"], string> = {
-  active: "bg-primary/20 border-primary/50 text-primary",
-  completed: "bg-green-500/20 border-green-500/50 text-green-600 dark:text-green-400",
-  pending: "bg-yellow-500/20 border-yellow-500/50 text-yellow-600 dark:text-yellow-400",
-  idea: "bg-accent/20 border-accent/50 text-accent-foreground",
-};
-
-// Helper to extract dot color class from status colors
-const getStatusDotColor = (status: RoadmapNodeData["status"]): string => {
-  const colors = STATUS_COLORS[status].split(" ");
-  // Extract text color (usually the last class)
-  const textColor = colors.find(cls => cls.startsWith("text-"));
-  if (textColor) {
-    // Convert text color to background color for the dot
-    return textColor.replace("text-", "bg-");
-  }
-  // Fallback to primary
-  return "bg-primary";
-};
-
-const MindMapNode: React.FC<{
-  node: RoadmapNodeData;
-  onDrag: (id: string, x: number, y: number) => void;
-  scale: number;
-}> = ({ node, onDrag, scale }) => {
-  const [isDragging, setIsDragging] = useState(false);
-  const x = useMotionValue(node.x);
-  const y = useMotionValue(node.y);
-
-  useEffect(() => {
-    x.set(node.x);
-    y.set(node.y);
-  }, [node.x, node.y, x, y]);
-
-  const handleDragEnd = (_: unknown, info: PanInfo) => {
-    const newX = node.x + info.offset.x / scale;
-    const newY = node.y + info.offset.y / scale;
-    onDrag(node.id, newX, newY);
-    setIsDragging(false);
-  };
-
-  return (
-    <motion.div
-      drag
-      dragMomentum={false}
-      dragElastic={0}
-      onDragStart={() => setIsDragging(true)}
-      onDragEnd={handleDragEnd}
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ type: "spring", stiffness: 300, damping: 25 }}
-      style={{
-        x,
-        y,
-        cursor: isDragging ? "grabbing" : "grab",
-      }}
-      className="absolute"
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.98 }}
-    >
-      <div
-        className={`
-          relative bg-card rounded-xl shadow-lg border-2 border-border
-          ${isDragging ? "shadow-2xl" : "shadow-md"}
-          transition-shadow duration-200
-          ${node.depth === 0 ? "w-64" : "w-56"}
-        `}
-      >
-        <div className={`p-4 ${node.depth === 0 ? "pb-3" : "pb-3"}`}>
-          <div className="flex items-start justify-between gap-2 mb-2">
-            <h3
-              className={`font-semibold ${node.depth === 0 ? "text-lg" : "text-base"} text-card-foreground leading-tight`}
-            >
-              {node.title}
-            </h3>
-            <div className="flex-shrink-0 mt-0.5">
-              <div
-                className={`w-2 h-2 rounded-full ${getStatusDotColor(node.status)}`}
-              />
-            </div>
-          </div>
-          {node.description && (
-            <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
-              {node.description}
-            </p>
-          )}
-          <div
-            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${STATUS_COLORS[node.status]}`}
-          >
-            {node.status}
-          </div>
-        </div>
-        {node.depth === 0 && (
-          <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-accent/20 rounded-xl -z-10 blur-sm" />
-        )}
-      </div>
-    </motion.div>
-  );
-};
-
-const ConnectionLines: React.FC<{
+interface RoadmapMindMapProps {
   nodes: RoadmapNodeData[];
-  scale: number;
-  offsetX: number;
-  offsetY: number;
-  centerX: number;
-  centerY: number;
-}> = ({ nodes, scale, offsetX, offsetY, centerX, centerY }) => {
-  const nodeMap = new Map(nodes.map((n) => [n.id, n]));
-
-  return (
-    <svg
-      className="absolute inset-0 pointer-events-none"
-      style={{ width: "100%", height: "100%" }}
-    >
-      {nodes
-        .filter((n) => n.parentId)
-        .map((node) => {
-          const parent = nodeMap.get(node.parentId!);
-          if (!parent) return null;
-
-          const x1 = parent.x * scale + offsetX + centerX;
-          const y1 = parent.y * scale + offsetY + centerY;
-          const x2 = node.x * scale + offsetX + centerX;
-          const y2 = node.y * scale + offsetY + centerY;
-
-          const midX = (x1 + x2) / 2;
-          const controlOffset = Math.abs(x2 - x1) * 0.3;
-
-          return (
-            <motion.path
-              key={`${parent.id}-${node.id}`}
-              d={`M ${x1} ${y1} Q ${midX} ${y1 + controlOffset}, ${x2} ${y2}`}
-              stroke="hsl(var(--border))"
-              strokeWidth="2"
-              fill="none"
-              initial={{ pathLength: 0, opacity: 0 }}
-              animate={{ pathLength: 1, opacity: 1 }}
-              transition={{ duration: 0.5, delay: node.depth * 0.1 }}
-            />
-          );
-        })}
-    </svg>
-  );
-};
-
-export interface RoadmapMindMapProps {
-  nodes: RoadmapNodeData[];
-  className?: string;
   showControls?: boolean;
   showLegend?: boolean;
+  className?: string;
 }
 
-export function RoadmapMindMap({
-  nodes: initialNodes,
-  className = "",
-  showControls = true,
-  showLegend = true,
-}: RoadmapMindMapProps) {
-  const [nodes, setNodes] = useState<RoadmapNodeData[]>(initialNodes);
-  const [scale, setScale] = useState(1);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
-  const [isPanning, setIsPanning] = useState(false);
-  const [size, setSize] = useState({ width: 800, height: 600 });
-  const containerRef = useRef<HTMLDivElement>(null);
+// Status-based colors
+const statusColors: Record<RoadmapNodeStatus, { bg: string; border: string; text: string }> = {
+  active: {
+    bg: "#3B82F6",
+    border: "#2563EB",
+    text: "#FFFFFF",
+  },
+  completed: {
+    bg: "#10B981",
+    border: "#059669",
+    text: "#FFFFFF",
+  },
+  pending: {
+    bg: "#F59E0B",
+    border: "#D97706",
+    text: "#FFFFFF",
+  },
+  idea: {
+    bg: "#8B5CF6",
+    border: "#7C3AED",
+    text: "#FFFFFF",
+  },
+};
 
-  useLayoutEffect(() => {
-    if (!containerRef.current) return;
-    const el = containerRef.current;
-    const update = () => {
-      if (el) {
-        const { width, height } = el.getBoundingClientRect();
-        setSize({ width, height });
-      }
-    };
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
-  useEffect(() => {
-    setNodes(initialNodes);
-  }, [initialNodes]);
-
-  const handleNodeDrag = (id: string, x: number, y: number) => {
-    setNodes((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, x, y } : n)),
-    );
-  };
-
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    const delta = e.deltaY * -0.001;
-    const newScale = Math.min(Math.max(0.5, scale + delta), 2);
-    setScale(newScale);
-  };
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      setIsPanning(true);
-    }
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (isPanning) {
-      setOffset((prev) => ({
-        x: prev.x + e.movementX,
-        y: prev.y + e.movementY,
-      }));
-    }
-  };
-
-  const handleMouseUp = () => {
-    setIsPanning(false);
-  };
-
-  const handleReset = () => {
-    setScale(1);
-    setOffset({ x: 0, y: 0 });
-    setNodes(initialNodes);
-  };
-
-  const centerX = size.width / 2;
-  const centerY = size.height / 2;
+// Custom Roadmap Node Component
+const RoadmapNode = ({ data, selected }: NodeProps<{ label: string; status: RoadmapNodeStatus; description?: string; depth: number; children?: string[] }>) => {
+  const colors = statusColors[data.status];
+  const isRoot = data.depth === 0;
 
   return (
     <div
-      ref={containerRef}
-      className={`relative w-full h-full min-h-[400px] overflow-hidden bg-background ${className}`}
+      style={{
+        background: colors.bg,
+        color: colors.text,
+        padding: isRoot ? "16px 24px" : "12px 20px",
+        borderRadius: "8px",
+        border: `2px solid ${colors.border}`,
+        fontSize: isRoot ? "16px" : "14px",
+        fontWeight: isRoot ? "700" : "600",
+        minWidth: isRoot ? "200px" : "160px",
+        textAlign: "center",
+        cursor: "pointer",
+        boxShadow: selected
+          ? `0 4px 12px ${colors.border}40`
+          : "0 2px 4px rgba(0,0,0,0.1)",
+        transition: "all 0.2s ease",
+        fontFamily: "system-ui, -apple-system, sans-serif",
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.transform = "translateY(-2px)";
+        e.currentTarget.style.boxShadow = `0 4px 12px ${colors.border}60`;
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.transform = "translateY(0)";
+        e.currentTarget.style.boxShadow = selected
+          ? `0 4px 12px ${colors.border}40`
+          : "0 2px 4px rgba(0,0,0,0.1)";
+      }}
     >
-      <div
-        className="absolute inset-0 opacity-30"
-        style={{
-          backgroundImage: `
-            linear-gradient(to right, hsl(var(--border) / 0.3) 1px, transparent 1px),
-            linear-gradient(to bottom, hsl(var(--border) / 0.3) 1px, transparent 1px)
-          `,
-          backgroundSize: "40px 40px",
-          transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
-          transformOrigin: "center",
-        }}
-      />
-
-      {showControls && (
-        <>
-          <div className="absolute top-4 left-4 z-20 flex flex-col gap-2">
-            <div className="bg-card/90 backdrop-blur-sm rounded-xl shadow-lg border border-border p-3">
-              <div className="text-xs font-medium text-foreground mb-2">
-                Controls
-              </div>
-              <div className="flex flex-col gap-1.5 text-xs text-muted-foreground">
-                <div>• Drag nodes to move</div>
-                <div>• Scroll to zoom</div>
-                <div>• Drag canvas to pan</div>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={handleReset}
-              className="bg-card/90 backdrop-blur-sm rounded-xl shadow-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-card transition-colors"
-            >
-              Reset View
-            </button>
-          </div>
-          <div className="absolute top-4 right-4 z-20 bg-card/90 backdrop-blur-sm rounded-xl shadow-lg border border-border px-4 py-2">
-            <div className="text-xs font-medium text-foreground">
-              Zoom: {Math.round(scale * 100)}%
-            </div>
-          </div>
-        </>
+      {!isRoot && (
+        <Handle
+          type="target"
+          position={Position.Top}
+          style={{ background: colors.border, width: "8px", height: "8px" }}
+        />
       )}
-
-      <div
-        className="absolute inset-0 cursor-move"
-        onWheel={handleWheel}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-      >
+      <div>{data.label}</div>
+      {data.description && (
         <div
-          className="relative w-full h-full"
           style={{
-            transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
-            transformOrigin: "center",
+            fontSize: "12px",
+            opacity: 0.9,
+            marginTop: "4px",
+            fontWeight: "400",
           }}
         >
-          <ConnectionLines
-            nodes={nodes}
-            scale={scale}
-            offsetX={offset.x}
-            offsetY={offset.y}
-            centerX={centerX}
-            centerY={centerY}
-          />
-
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-            {nodes.map((node) => (
-              <MindMapNode
-                key={node.id}
-                node={node}
-                onDrag={handleNodeDrag}
-                scale={scale}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {showLegend && (
-        <div className="absolute bottom-4 left-4 z-20 bg-card/90 backdrop-blur-sm rounded-xl shadow-lg border border-border p-3">
-          <div className="text-xs font-medium text-foreground mb-2">
-            Status
-          </div>
-          <div className="flex flex-col gap-1.5">
-            {(Object.entries(STATUS_COLORS) as [RoadmapNodeData["status"], string][]).map(
-              ([status, cls]) => (
-                <div key={status} className="flex items-center gap-2">
-                  <div
-                    className={`w-2 h-2 rounded-full ${getStatusDotColor(status)}`}
-                  />
-                  <span className="text-xs text-muted-foreground capitalize">
-                    {status}
-                  </span>
-                </div>
-              ),
-            )}
-          </div>
+          {data.description}
         </div>
       )}
+      {data.children && data.children.length > 0 && (
+        <Handle
+          type="source"
+          position={Position.Bottom}
+          style={{ background: colors.border, width: "8px", height: "8px" }}
+        />
+      )}
     </div>
+  );
+};
+
+const nodeTypes = {
+  roadmap: RoadmapNode,
+};
+
+export function RoadmapMindMap({
+  nodes: roadmapNodes,
+  showControls = true,
+  showLegend = false,
+  className,
+}: RoadmapMindMapProps) {
+  const [reactFlowNodes, setReactFlowNodes, onNodesChange] = useNodesState([]);
+  const [reactFlowEdges, setReactFlowEdges, onEdgesChange] = useEdgesState([]);
+  const reactFlowInstance = useRef<ReactFlowInstance | null>(null);
+
+  // Convert RoadmapNodeData to ReactFlow nodes and edges
+  const { flowNodes, flowEdges } = useMemo(() => {
+    if (!roadmapNodes || roadmapNodes.length === 0) {
+      return { flowNodes: [], flowEdges: [] };
+    }
+
+    const nodes: Node[] = roadmapNodes.map(node => ({
+      id: node.id,
+      type: "roadmap",
+      position: { x: node.x, y: node.y },
+      data: {
+        label: node.title,
+        status: node.status,
+        description: node.description,
+        depth: node.depth,
+        children: node.children,
+      },
+    }));
+
+    const edges: Edge[] = [];
+    roadmapNodes.forEach(node => {
+      if (node.parentId) {
+        edges.push({
+          id: `e-${node.parentId}-${node.id}`,
+          source: node.parentId,
+          target: node.id,
+          type: "smoothstep",
+          animated: false,
+          style: {
+            stroke: "#6B7280",
+            strokeWidth: 2,
+          },
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: "#6B7280",
+            width: 20,
+            height: 20,
+          },
+        });
+      }
+    });
+
+    return { flowNodes: nodes, flowEdges: edges };
+  }, [roadmapNodes]);
+
+  React.useEffect(() => {
+    setReactFlowNodes(flowNodes);
+    setReactFlowEdges(flowEdges);
+  }, [flowNodes, flowEdges, setReactFlowNodes, setReactFlowEdges]);
+
+  // Fit view after nodes are loaded
+  useEffect(() => {
+    if (reactFlowInstance.current && flowNodes.length > 0) {
+      setTimeout(() => {
+        reactFlowInstance.current?.fitView({ padding: 0.3, duration: 400 });
+      }, 100);
+    }
+  }, [flowNodes.length]);
+
+  if (!roadmapNodes || roadmapNodes.length === 0) {
+    return (
+      <div className={cn("w-full h-full flex items-center justify-center", className)}>
+        <p className="text-muted-foreground">No roadmap data available</p>
+      </div>
+    );
+  }
+
+  return (
+    <ReactFlowProvider>
+      <div className={cn("w-full h-full relative", className)} style={{ width: "100%", height: "100%", minHeight: "400px" }}>
+        <ReactFlow
+          nodes={reactFlowNodes}
+          edges={reactFlowEdges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onInit={(instance) => {
+            reactFlowInstance.current = instance;
+          }}
+          nodeTypes={nodeTypes}
+          fitView
+          fitViewOptions={{ padding: 0.3 }}
+          minZoom={0.2}
+          maxZoom={2}
+          defaultEdgeOptions={{
+            type: "smoothstep",
+            animated: false,
+          }}
+          connectionLineStyle={{ stroke: "#6B7280", strokeWidth: 2 }}
+          snapToGrid={true}
+          snapGrid={[20, 20]}
+          style={{ width: "100%", height: "100%" }}
+        >
+          <Background color="#e5e7eb" gap={20} size={1} />
+          {showControls && <Controls showInteractive={false} />}
+        </ReactFlow>
+        {showLegend && (
+          <div className="absolute bottom-4 left-4 bg-card border border-border rounded-lg p-4 shadow-lg z-10">
+            <div className="text-sm font-semibold mb-2">Status Legend</div>
+            <div className="flex flex-col gap-2">
+              {Object.entries(statusColors).map(([status, colors]) => (
+                <div key={status} className="flex items-center gap-2">
+                  <div
+                    style={{
+                      width: "16px",
+                      height: "16px",
+                      backgroundColor: colors.bg,
+                      border: `2px solid ${colors.border}`,
+                      borderRadius: "4px",
+                    }}
+                  />
+                  <span className="text-xs capitalize">{status}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </ReactFlowProvider>
   );
 }

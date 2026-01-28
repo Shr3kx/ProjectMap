@@ -3,8 +3,9 @@ import { createSupabaseServerClient } from "@/lib/supabaseServer";
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { folderId: string } },
+  { params }: { params: Promise<{ folderId: string }> },
 ) {
+  const { folderId } = await params;
   const supabase = await createSupabaseServerClient();
 
   const {
@@ -29,7 +30,7 @@ export async function PATCH(
   const { data, error } = await supabase
     .from("folders")
     .update({ name })
-    .eq("id", params.folderId)
+    .eq("id", folderId)
     .eq("user_id", user.id)
     .select("id, name, created_at")
     .single();
@@ -47,8 +48,9 @@ export async function PATCH(
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { folderId: string } },
+  { params }: { params: Promise<{ folderId: string }> },
 ) {
+  const { folderId } = await params;
   const supabase = await createSupabaseServerClient();
 
   const {
@@ -64,7 +66,7 @@ export async function DELETE(
   const { error: chatsError } = await supabase
     .from("chats")
     .update({ folder_id: null })
-    .eq("folder_id", params.folderId)
+    .eq("folder_id", folderId)
     .eq("user_id", user.id);
 
   if (chatsError) {
@@ -78,7 +80,7 @@ export async function DELETE(
   const { error } = await supabase
     .from("folders")
     .delete()
-    .eq("id", params.folderId)
+    .eq("id", folderId)
     .eq("user_id", user.id);
 
   if (error) {

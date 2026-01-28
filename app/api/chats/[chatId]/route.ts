@@ -10,8 +10,9 @@ type ChatMessage = {
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { chatId: string } },
+  { params }: { params: Promise<{ chatId: string }> },
 ) {
+  const { chatId } = await params;
   const supabase = await createSupabaseServerClient();
 
   const {
@@ -26,7 +27,7 @@ export async function GET(
   const { data, error } = await supabase
     .from("chats")
     .select("*")
-    .eq("id", params.chatId)
+    .eq("id", chatId)
     .single();
 
   if (error || !data) {
@@ -39,8 +40,9 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { chatId: string } },
+  { params }: { params: Promise<{ chatId: string }> },
 ) {
+  const { chatId } = await params;
   const supabase = await createSupabaseServerClient();
 
   const {
@@ -90,7 +92,7 @@ export async function PATCH(
   const { data, error } = await supabase
     .from("chats")
     .update(update)
-    .eq("id", params.chatId)
+    .eq("id", chatId)
     .eq("user_id", user.id)
     .select("id, chat_name, created_at, updated_at, folder_id, is_pinned")
     .single();
@@ -108,8 +110,9 @@ export async function PATCH(
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { chatId: string } },
+  { params }: { params: Promise<{ chatId: string }> },
 ) {
+  const { chatId } = await params;
   const supabase = await createSupabaseServerClient();
 
   const {
@@ -124,7 +127,7 @@ export async function DELETE(
   const { error } = await supabase
     .from("chats")
     .delete()
-    .eq("id", params.chatId)
+    .eq("id", chatId)
     .eq("user_id", user.id);
 
   if (error) {

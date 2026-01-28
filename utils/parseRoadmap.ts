@@ -1,6 +1,9 @@
 import type { RoadmapNodeData } from "@/types/roadmap";
 
-const ROADMAP_JSON_REGEX = /```roadmap-json\s*\n([\s\S]*?)\n```/;
+// More flexible regex to match roadmap-json code blocks with various formatting
+// Handles cases with or without newlines, extra spaces, etc.
+// Matches: ```roadmap-json (optional whitespace/newline) content ``` (with optional whitespace)
+const ROADMAP_JSON_REGEX = /```\s*roadmap-json\s*\n?([\s\S]*?)\n?\s*```/;
 
 function isValidNode(raw: unknown): raw is RoadmapNodeData {
   if (!raw || typeof raw !== "object") return false;
@@ -20,7 +23,8 @@ export function parseRoadmapFromContent(content: string): {
   roadmapData: RoadmapNodeData[] | null;
 } {
   const match = content.match(ROADMAP_JSON_REGEX);
-  if (!match) {
+  
+  if (!match || !match[1]) {
     return { contentWithoutRoadmap: content, roadmapData: null };
   }
 
@@ -28,14 +32,18 @@ export function parseRoadmapFromContent(content: string): {
   let parsed: unknown;
   try {
     parsed = JSON.parse(rawBlock) as unknown;
-  } catch {
+  } catch (error) {
+    console.error("Failed to parse roadmap JSON:", error);
     return { contentWithoutRoadmap: content, roadmapData: null };
   }
 
   const arr = Array.isArray(parsed) ? parsed : [parsed];
   const nodes: RoadmapNodeData[] = [];
   for (const item of arr) {
-    if (!isValidNode(item)) continue;
+    if (!isValidNode(item)) {
+      console.warn("Invalid roadmap node:", item);
+      continue;
+    }
     nodes.push({
       id: item.id,
       title: item.title,
@@ -55,6 +63,11 @@ export function parseRoadmapFromContent(content: string): {
     return { contentWithoutRoadmap: content, roadmapData: null };
   }
 
-  const contentWithoutRoadmap = content.replace(ROADMAP_JSON_REGEX, "").replace(/\n{3,}/g, "\n\n").trim();
+  // Remove the roadmap-json code block from the content
+  const contentWithoutRoadmap = content
+    .replace(ROADMAP_JSON_REGEX, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+    
   return { contentWithoutRoadmap, roadmapData: nodes };
 }

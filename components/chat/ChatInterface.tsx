@@ -122,8 +122,8 @@ const EmptyState = ({ onPromptClick }: EmptyStateProps) => {
           Hey, how can I help you today?
         </h1>
         <p className="text-muted-foreground mb-6">
-          ProjectMap is an ad-free, no data collection, no bullshit chatbot. Ask
-          anything to begin your conversation.
+          ProjectMap is a focused roadmap generator built to turn ideas into
+          clear, actionable plans—no ads, no noise, just structure.
         </p>
       </div>
 
@@ -331,15 +331,16 @@ export function ChatInterface() {
         }),
       };
 
-      const updatedMessages = [...messages, assistantMessage];
-      setMessages(updatedMessages);
-
-      // Persist chat silently in the background for authenticated users
-      void persistChat(updatedMessages);
+      // Use functional update to ensure we include the user message that was already added
+      setMessages(prev => {
+        const updatedMessages = [...prev, assistantMessage];
+        // Persist chat silently in the background for authenticated users
+        void persistChat(updatedMessages);
+        return updatedMessages;
+      });
 
       // Set loading to false immediately after message is added
       setIsLoading(false);
-
     } catch (error) {
       console.error("Chat error:", error);
       toast.error(
@@ -507,7 +508,7 @@ export function ChatInterface() {
               const id = `att-${Date.now()}-${Math.random()}`;
               const isImage = file.type.startsWith("image/");
               const reader = new FileReader();
-              
+
               reader.onload = e => {
                 const dataUrl = e.target?.result as string;
                 setAttachments(prev => [
@@ -522,7 +523,7 @@ export function ChatInterface() {
                   },
                 ]);
               };
-              
+
               reader.readAsDataURL(file);
             });
           }}
