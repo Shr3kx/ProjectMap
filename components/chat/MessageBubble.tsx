@@ -36,13 +36,14 @@ export function MessageBubble({
   const isUser = message.role === "user";
   const [isHovered, setIsHovered] = useState(false);
   const [roadmapModalOpen, setRoadmapModalOpen] = useState(false);
-  const hasRoadmap = !isUser && message.roadmapData && message.roadmapData.length > 0;
+  const hasRoadmap =
+    !isUser && message.roadmapData && message.roadmapData.length > 0;
 
   // Additional safety check: if roadmap data exists but content contains roadmap-json block,
   // remove it to prevent double display of roadmap
   const cleanContent = React.useMemo(() => {
     if (!message.content || !hasRoadmap) return message.content;
-    
+
     // Remove any remaining roadmap-json code blocks to prevent display issues
     return message.content
       .replace(/```\s*roadmap-json[\s\S]*?```/g, "")

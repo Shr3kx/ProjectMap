@@ -5,13 +5,15 @@ import type { RoadmapNodeData } from "@/types/roadmap";
 const ROADMAP_JSON_REGEX_STANDARD = /```\s*roadmap-json\s*\n([\s\S]*?)\n```/;
 
 // Pattern 2: More lenient - handles extra whitespace before/after content
-const ROADMAP_JSON_REGEX_LENIENT = /```\s*roadmap-json\s*\n?([\s\S]*?)\n?\s*```/;
+const ROADMAP_JSON_REGEX_LENIENT =
+  /```\s*roadmap-json\s*\n?([\s\S]*?)\n?\s*```/;
 
 // Pattern 3: Handles case where there's no newline after opening backticks
 const ROADMAP_JSON_REGEX_NO_NEWLINE = /```roadmap-json\s*([\s\S]*?)\s*```/;
 
 // Pattern 4: For malformed blocks that might have extra whitespace
-const ROADMAP_JSON_REGEX_AGGRESSIVE = /`{3}\s*roadmap-json\s*\n?([\s\S]*?)\n?\s*`{3}/;
+const ROADMAP_JSON_REGEX_AGGRESSIVE =
+  /`{3}\s*roadmap-json\s*\n?([\s\S]*?)\n?\s*`{3}/;
 
 // Try to extract JSON from roadmap-json code block using multiple patterns
 function extractRoadmapJson(content: string): string | null {
@@ -51,7 +53,7 @@ export function parseRoadmapFromContent(content: string): {
 } {
   // Try to extract roadmap JSON using multiple patterns
   const rawBlock = extractRoadmapJson(content);
-  
+
   if (!rawBlock) {
     return { contentWithoutRoadmap: content, roadmapData: null };
   }
@@ -60,7 +62,12 @@ export function parseRoadmapFromContent(content: string): {
   try {
     parsed = JSON.parse(rawBlock) as unknown;
   } catch (error) {
-    console.error("Failed to parse roadmap JSON:", error, "Raw block:", rawBlock);
+    console.error(
+      "Failed to parse roadmap JSON:",
+      error,
+      "Raw block:",
+      rawBlock,
+    );
     return { contentWithoutRoadmap: content, roadmapData: null };
   }
 
@@ -74,14 +81,17 @@ export function parseRoadmapFromContent(content: string): {
     nodes.push({
       id: item.id,
       title: item.title,
-      description: typeof item.description === "string" ? item.description : undefined,
+      description:
+        typeof item.description === "string" ? item.description : undefined,
       status: item.status,
       x: item.x,
       y: item.y,
       depth: item.depth,
       parentId: typeof item.parentId === "string" ? item.parentId : undefined,
       children: Array.isArray(item.children)
-        ? (item.children as string[]).filter((c): c is string => typeof c === "string")
+        ? (item.children as string[]).filter(
+            (c): c is string => typeof c === "string",
+          )
         : undefined,
     });
   }
@@ -107,6 +117,6 @@ export function parseRoadmapFromContent(content: string): {
   contentWithoutRoadmap = contentWithoutRoadmap
     .replace(/\n{3,}/g, "\n\n")
     .trim();
-    
+
   return { contentWithoutRoadmap, roadmapData: nodes };
 }
