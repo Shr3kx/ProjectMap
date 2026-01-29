@@ -38,6 +38,18 @@ export function MessageBubble({
   const [roadmapModalOpen, setRoadmapModalOpen] = useState(false);
   const hasRoadmap = !isUser && message.roadmapData && message.roadmapData.length > 0;
 
+  // Additional safety check: if roadmap data exists but content contains roadmap-json block,
+  // remove it to prevent double display of roadmap
+  const cleanContent = React.useMemo(() => {
+    if (!message.content || !hasRoadmap) return message.content;
+    
+    // Remove any remaining roadmap-json code blocks to prevent display issues
+    return message.content
+      .replace(/```\s*roadmap-json[\s\S]*?```/g, "")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  }, [message.content, hasRoadmap]);
+
   const handleCopy = () => {
     if (message.content) {
       navigator.clipboard.writeText(message.content);
@@ -128,14 +140,14 @@ export function MessageBubble({
           )}
 
           {/* Text Content */}
-          {message.content && (
+          {cleanContent && (
             <div className="text-sm">
               {isUser ? (
                 <p className="whitespace-pre-wrap break-words">
-                  {message.content}
+                  {cleanContent}
                 </p>
               ) : (
-                <MarkdownRenderer content={message.content} />
+                <MarkdownRenderer content={cleanContent} />
               )}
             </div>
           )}

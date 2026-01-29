@@ -1,9 +1,36 @@
 import type { RoadmapNodeData } from "@/types/roadmap";
 
-// More flexible regex to match roadmap-json code blocks with various formatting
-// Handles cases with or without newlines, extra spaces, etc.
-// Matches: ```roadmap-json (optional whitespace/newline) content ``` (with optional whitespace)
-const ROADMAP_JSON_REGEX = /```\s*roadmap-json\s*\n?([\s\S]*?)\n?\s*```/;
+// Multiple regex patterns to handle various formatting variations of roadmap-json code blocks
+// Pattern 1: Standard format with backticks and optional whitespace
+const ROADMAP_JSON_REGEX_STANDARD = /```\s*roadmap-json\s*\n([\s\S]*?)\n```/;
+
+// Pattern 2: More lenient - handles extra whitespace before/after content
+const ROADMAP_JSON_REGEX_LENIENT = /```\s*roadmap-json\s*\n?([\s\S]*?)\n?\s*```/;
+
+// Pattern 3: Handles case where there's no newline after opening backticks
+const ROADMAP_JSON_REGEX_NO_NEWLINE = /```roadmap-json\s*([\s\S]*?)\s*```/;
+
+// Pattern 4: For malformed blocks that might have extra whitespace
+const ROADMAP_JSON_REGEX_AGGRESSIVE = /`{3}\s*roadmap-json\s*\n?([\s\S]*?)\n?\s*`{3}/;
+
+// Try to extract JSON from roadmap-json code block using multiple patterns
+function extractRoadmapJson(content: string): string | null {
+  const patterns = [
+    ROADMAP_JSON_REGEX_STANDARD,
+    ROADMAP_JSON_REGEX_LENIENT,
+    ROADMAP_JSON_REGEX_NO_NEWLINE,
+    ROADMAP_JSON_REGEX_AGGRESSIVE,
+  ];
+
+  for (const pattern of patterns) {
+    const match = content.match(pattern);
+    if (match && match[1]) {
+      return match[1].trim();
+    }
+  }
+
+  return null;
+}
 
 function isValidNode(raw: unknown): raw is RoadmapNodeData {
   if (!raw || typeof raw !== "object") return false;
@@ -22,18 +49,18 @@ export function parseRoadmapFromContent(content: string): {
   contentWithoutRoadmap: string;
   roadmapData: RoadmapNodeData[] | null;
 } {
-  const match = content.match(ROADMAP_JSON_REGEX);
+  // Try to extract roadmap JSON using multiple patterns
+  const rawBlock = extractRoadmapJson(content);
   
-  if (!match || !match[1]) {
+  if (!rawBlock) {
     return { contentWithoutRoadmap: content, roadmapData: null };
   }
 
-  const rawBlock = match[1].trim();
   let parsed: unknown;
   try {
     parsed = JSON.parse(rawBlock) as unknown;
   } catch (error) {
-    console.error("Failed to parse roadmap JSON:", error);
+    console.error("Failed to parse roadmap JSON:", error, "Raw block:", rawBlock);
     return { contentWithoutRoadmap: content, roadmapData: null };
   }
 
@@ -63,9 +90,21 @@ export function parseRoadmapFromContent(content: string): {
     return { contentWithoutRoadmap: content, roadmapData: null };
   }
 
-  // Remove the roadmap-json code block from the content
-  const contentWithoutRoadmap = content
-    .replace(ROADMAP_JSON_REGEX, "")
+  // Remove ALL variations of roadmap-json code blocks from the content
+  let contentWithoutRoadmap = content;
+  const removalPatterns = [
+    ROADMAP_JSON_REGEX_STANDARD,
+    ROADMAP_JSON_REGEX_LENIENT,
+    ROADMAP_JSON_REGEX_NO_NEWLINE,
+    ROADMAP_JSON_REGEX_AGGRESSIVE,
+  ];
+
+  for (const pattern of removalPatterns) {
+    contentWithoutRoadmap = contentWithoutRoadmap.replace(pattern, "");
+  }
+
+  // Clean up extra whitespace and newlines
+  contentWithoutRoadmap = contentWithoutRoadmap
     .replace(/\n{3,}/g, "\n\n")
     .trim();
     
